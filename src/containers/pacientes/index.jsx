@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-// import { getPatients } from "../../services/getPatient"; // Comentado temporariamente
 import { RefreshCw, Search, Eye, Edit2, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { getPatients } from "../../services/getPatient";
 
 export default function PacientesList() {
   const [patients, setPatients] = useState([]);
@@ -14,23 +14,14 @@ export default function PacientesList() {
     try {
       setLoading(true);
       setError("");
-      
-      // MOCK - dados falsos para visualização
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockData = [
-        { id: 1, name: 'João Silva', email: 'joao.silva@email.com', professional: 'Dr. Carlos', registrationDate: '2024-01-15' },
-        { id: 2, name: 'Maria Santos', email: 'maria.santos@email.com', professional: 'Dra. Ana', registrationDate: '2024-01-20' },
-        { id: 3, name: 'Pedro Costa', email: 'pedro.costa@email.com', professional: 'Dr. Carlos', registrationDate: '2024-02-05' },
-        { id: 4, name: 'Ana Oliveira', email: 'ana.oliveira@email.com', professional: 'Dra. Ana', registrationDate: '2024-02-10' },
-        { id: 5, name: 'Carlos Souza', email: 'carlos.souza@email.com', professional: 'Dr. João', registrationDate: '2024-02-15' },
-        { id: 6, name: 'Juliana Lima', email: 'juliana.lima@email.com', professional: 'Dra. Ana', registrationDate: '2024-03-01' },
-        { id: 7, name: 'Roberto Alves', email: 'roberto.alves@email.com', professional: 'Dr. Carlos', registrationDate: '2024-03-05' },
-        { id: 8, name: 'Fernanda Rocha', email: 'fernanda.rocha@email.com', professional: 'Dr. João', registrationDate: '2024-03-10' },
-      ];
-      
-      setPatients(mockData);
-      
+
+      const res = await getPatients();
+      if (!res.success) {
+        setError(res.message || "Erro ao carregar pacientes");
+        return;
+      }
+
+      setPatients(res.data ?? []);
     } catch (err) {
       console.error("Erro ao carregar pacientes:", err);
       setError("Erro ao conectar com o servidor");
@@ -43,10 +34,9 @@ export default function PacientesList() {
     loadPatients();
   }, []);
 
-  const filteredPatients = patients.filter(p => 
+  const filteredPatients = patients.filter(p =>
     p?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p?.professional?.toLowerCase().includes(searchTerm.toLowerCase())
+    p?.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalPages = Math.ceil(filteredPatients.length / itemsPerPage);
@@ -56,29 +46,22 @@ export default function PacientesList() {
 
   const handleView = (patient) => {
     alert(`Visualizar paciente: ${patient.name}`);
-    //página de detalhes
   };
 
   const handleEdit = (patient) => {
     alert(`Editar paciente: ${patient.name}`);
-    //página de edição
   };
 
   const handleDelete = (patient) => {
     if (confirm(`Tem certeza que deseja excluir o paciente ${patient.name}?`)) {
       alert(`Paciente ${patient.name} excluído!`);
-      //API de exclusão
     }
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR');
   };
 
   return (
     <div className="max-w-7xl mx-auto">
       <div className="bg-white rounded-lg shadow-md">
+
         {/* Header */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
@@ -102,7 +85,7 @@ export default function PacientesList() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             <input
               type="text"
-              placeholder="Buscar por nome, email ou profissional..."
+              placeholder="Buscar por nome ou email..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -113,6 +96,7 @@ export default function PacientesList() {
           </div>
         </div>
 
+        {/* Tabela */}
         <div className="p-6">
           {loading && (
             <div className="text-center py-12">
@@ -133,9 +117,6 @@ export default function PacientesList() {
               <p className="text-gray-600 text-lg font-medium">
                 {searchTerm ? 'Nenhum paciente encontrado' : 'Nenhum paciente cadastrado'}
               </p>
-              <p className="text-gray-500 text-sm mt-2">
-                {searchTerm ? 'Tente buscar com outros termos' : 'Cadastre seu primeiro paciente'}
-              </p>
             </div>
           )}
 
@@ -151,17 +132,12 @@ export default function PacientesList() {
                       <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         Email
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Profissional
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Data de Registro
-                      </th>
                       <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         Ações
                       </th>
                     </tr>
                   </thead>
+
                   <tbody className="bg-white divide-y divide-gray-200">
                     {currentPatients.map((patient) => (
                       <tr key={patient.id} className="hover:bg-gray-50 transition">
@@ -170,12 +146,6 @@ export default function PacientesList() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-600">{patient.email}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-600">{patient.professional}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-600">{formatDate(patient.registrationDate)}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <div className="flex items-center justify-center gap-2">
@@ -208,12 +178,13 @@ export default function PacientesList() {
                 </table>
               </div>
 
+              {/* Paginação */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
                   <div className="text-sm text-gray-600">
                     Mostrando {startIndex + 1} a {Math.min(endIndex, filteredPatients.length)} de {filteredPatients.length} pacientes
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -224,21 +195,19 @@ export default function PacientesList() {
                       Anterior
                     </button>
 
-                    <div className="flex gap-1">
-                      {[...Array(totalPages)].map((_, index) => (
-                        <button
-                          key={index + 1}
-                          onClick={() => setCurrentPage(index + 1)}
-                          className={`px-3 py-2 text-sm rounded-lg transition ${
-                            currentPage === index + 1
-                              ? 'bg-primary-500 text-white font-semibold'
-                              : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          {index + 1}
-                        </button>
-                      ))}
-                    </div>
+                    {[...Array(totalPages)].map((_, index) => (
+                      <button
+                        key={index + 1}
+                        onClick={() => setCurrentPage(index + 1)}
+                        className={`px-3 py-2 text-sm rounded-lg transition ${
+                          currentPage === index + 1
+                            ? "bg-primary-500 text-white font-semibold"
+                            : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
+                        }`}
+                      >
+                        {index + 1}
+                      </button>
+                    ))}
 
                     <button
                       onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
@@ -257,4 +226,4 @@ export default function PacientesList() {
       </div>
     </div>
   );
-} 
+}

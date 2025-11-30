@@ -1,12 +1,16 @@
 import api from './api';
 
-export async function getPatients() {
+export async function getPatients(searchTerm = "") {
   try {
-    const response = await api.get('/User/ListPatients');
+    const response = await api.get('/User/ListPatients', {
+      params: {
+        searchTerm: searchTerm || null, // envia como query
+      },
+    });
 
     return {
       success: true,
-      data: response.data,
+      data: response.data.data || response.data,
     };
   } catch (error) {
     console.error("Erro ao buscar pacientes:", error);
@@ -17,5 +21,14 @@ export async function getPatients() {
         error.response?.data?.message ||
         'Erro ao buscar pacientes. Tente novamente.',
     };
+  }
+}
+export async function getTotalPatients() {
+  try {
+    const res = await api.get("/User/TotalPatients");
+    return res.data.data || res.data || [];
+  } catch (err) {
+    console.error("Erro ao buscar pacientes:", err);
+    return [];
   }
 }

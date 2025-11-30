@@ -7,16 +7,19 @@ const api = axios.create({
 });
 console.log("API URL:", import.meta.env.VITE_API_URL);
 // Interceptor para incluir o token JWT
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  console.log("Token adicionado à requisição:", token);
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  
+const noAuthRoutes = ["/User/CreateUser", "/User/Login"];
 
+api.interceptors.request.use((config) => {
+  if (!noAuthRoutes.some((r) => config.url.includes(r))) {
+    const token = localStorage.getItem("token");
+    if (token && token !== "null") {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
   return config;
 });
+
+
 // Interceptor para capturar erros e agir conforme o status
 api.interceptors.response.use(
   (response) => response,
