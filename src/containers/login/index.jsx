@@ -55,7 +55,7 @@ export default function Login() {
       <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600 items-center justify-center">
         <div className="w-80 h-80 bg-white rounded-2xl flex items-center justify-center shadow-2xl p-8">
           <img 
-            src="src/public/logo.png" 
+            src="src/assets/logo.png" 
             alt="Logo Focus Map" 
             className="w-full h-full object-contain"
           />
