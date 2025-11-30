@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { login } from '../../services/authService';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from "@react-oauth/google"; 
-import logo from "../../assets/logo.png";
 
 
 export default function Login() {
@@ -58,7 +57,7 @@ export default function Login() {
       <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600 items-center justify-center">
         <div className="w-80 h-80 bg-white rounded-2xl flex items-center justify-center shadow-2xl p-8">
           <img 
-            src={logo} 
+            src="/logo.png"
             alt="Logo Focus Map" 
             className="w-full h-full object-contain"
           />

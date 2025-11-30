@@ -8,7 +8,7 @@ import {
   Menu, 
   X
 } from 'lucide-react';
-import logo2 from '../../assets/logo2.png';
+
 export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
@@ -33,7 +33,7 @@ export default function DashboardLayout({ children }) {
       <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-white border-r border-gray-200">
         <div className="flex items-center justify-center h-24 border-b border-gray-200 bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4">
           <img 
-            src={logo2} 
+            src="/logo2.png"
             alt="Focus Map Logo" 
             className="h-45 w-full object-contain"
           />
