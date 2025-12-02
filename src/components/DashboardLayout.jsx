@@ -37,7 +37,7 @@ export default function DashboardLayout({ children }) {
       <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-white border-r border-gray-200">
         <div className="flex items-center justify-center h-24 border-b border-gray-200 bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4">
           <img 
-            src="/src/public/logo2.png" 
+            src="/images/logo2.png" 
             alt="Focus Map Logo" 
             className="h-45 w-full object-contain"
           />
@@ -78,7 +78,7 @@ export default function DashboardLayout({ children }) {
           <aside className="fixed top-0 left-0 bottom-0 w-64 bg-white shadow-xl">
             <div className="flex items-center justify-between h-24 px-4 border-b border-gray-200 bg-gradient-to-r from-primary-500 to-primary-600">
               <img 
-                src="/src/public/logo.png" 
+                src="/images/logo.png" 
                 alt="Focus Map Logo" 
                 className="h-20 w-auto object-contain"
               />
