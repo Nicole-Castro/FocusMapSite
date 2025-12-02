@@ -1,18 +1,66 @@
 import React, { useState } from 'react';
-import { login } from '../../services/authService';
+import { login, loginGoogle } from '../../services/authService';
 import { useNavigate } from 'react-router-dom';
-import { useGoogleLogin } from "@react-oauth/google"; 
-
+import axios from "axios";
+import { useGoogleLogin } from "@react-oauth/google";
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
+  // -------------------------------
+  // 🔎 Função de validação
+  // -------------------------------
+  const validate = () => {
+    const newErrors = {};
+
+    if (!email) {
+      newErrors.email = "O email é obrigatório.";
+    } else if (!/^\S+@\S+\.\S+$/.test(email)) {
+      newErrors.email = "Digite um email válido.";
+    }
+
+    if (!password) {
+      newErrors.password = "A senha é obrigatória.";
+    } else if (password.length < 6) {
+      newErrors.password = "A senha deve ter pelo menos 6 caracteres.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // -------------------------------
+  // 🔐 Login Normal
+  // -------------------------------
+  const handleSubmit = async () => {
+    if (!validate()) return;
+
+    setLoading(true);
+
+    const result = await login(email, password);
+
+    setLoading(false);
+
+    if (result.success) {
+      navigate("/dashboard");
+    } else {
+      setErrors({ general: result.message });
+    }
+  };
+
+  // -------------------------------
+  // 🔵 Login Google
+  // -------------------------------
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        // Pega dados do usuário no Google
+        setLoading(true);
+
         const userInfo = await axios.get(
           "https://www.googleapis.com/oauth2/v3/userinfo",
           {
@@ -21,53 +69,51 @@ export default function Login() {
         );
 
         const result = await loginGoogle(userInfo.data);
+        setLoading(false);
 
         if (result.success) {
           navigate("/dashboard");
         } else {
-          alert(result.message);
+          setErrors({ general: result.message });
         }
+
       } catch (error) {
-        console.error("Erro ao buscar dados do google:", error);
+        setLoading(false);
+        setErrors({ general: "Erro ao entrar com Google. Tente novamente." });
       }
     },
     onError: () => {
-      alert("Erro ao fazer login pelo Google");
+      setErrors({ general: "Erro ao conectar com Google." });
     },
   });
-  const handleSubmit = async () => {
-    if (!email || !password) {
-      alert('Por favor, preencha email e senha.');
-      return;
-    }
-    const result = await login(email, password);
-    if (result.success) {
-      navigate('/dashboard');
-    } else {
-      alert(result.message);
-    }
-  };
-
-  const handleGoogleLogin = () => {
-    console.log('Login com Google');
-  };
 
   return (
     <div className="flex min-h-screen w-full">
+      {/* Lado esquerdo */}
       <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600 items-center justify-center">
         <div className="w-80 h-80 bg-white rounded-2xl flex items-center justify-center shadow-2xl p-8">
-          <img 
-            src="src\public\logo.png"
-            alt="Logo Focus Map" 
+          <img
+            src="/images/logo.png"
+            alt="Logo Focus Map"
             className="w-full h-full object-contain"
           />
         </div>
       </div>
 
+      {/* Lado direito - formulário */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md">
+
           <h1 className="text-3xl font-bold mb-8 text-gray-800">Iniciar Sessão</h1>
 
+          {/* Erro geral */}
+          {errors.general && (
+            <p className="mb-4 text-red-500 text-sm font-medium">
+              {errors.general}
+            </p>
+          )}
+
+          {/* Campo Email */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Email
@@ -77,10 +123,18 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="seu@email.com"
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
+              className={`w-full px-4 py-3 bg-gray-50 border rounded-lg focus:outline-none transition ${
+                errors.email
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-gray-300 focus:ring-primary-500 focus:border-primary-500"
+              }`}
             />
+            {errors.email && (
+              <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+            )}
           </div>
 
+          {/* Campo Senha */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Senha
@@ -90,8 +144,15 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
+              className={`w-full px-4 py-3 bg-gray-50 border rounded-lg focus:outline-none transition ${
+                errors.password
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-gray-300 focus:ring-primary-500 focus:border-primary-500"
+              }`}
             />
+            {errors.password && (
+              <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+            )}
           </div>
 
           <button
@@ -101,22 +162,25 @@ export default function Login() {
             Esqueceu sua senha?
           </button>
 
+          {/* Botão Entrar */}
           <button
             onClick={handleSubmit}
-            className="w-full py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-lg hover:from-primary-600 hover:to-primary-700 transition shadow-md hover:shadow-lg mb-4"
+            disabled={loading}
+            className="w-full py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-lg hover:from-primary-600 hover:to-primary-700 transition shadow-md hover:shadow-lg mb-4 disabled:opacity-50"
           >
-            Entrar
+            {loading ? "Entrando..." : "Entrar"}
           </button>
 
-         <button 
-  onClick={() => googleLogin()}
-  className="w-full py-3 bg-white text-primary-600 font-medium border-2 border-primary-500 rounded-lg flex items-center justify-center gap-2"
->
-  Login com o Google
-</button>
+          {/* Botão Google */}
+          <button
+            onClick={() => googleLogin()}
+            disabled={loading}
+            className="w-full py-3 bg-white text-primary-600 font-medium border-2 border-primary-500 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            Login com o Google
+          </button>
 
-
-          <p className="text-center text-sm text-gray-600">
+          <p className="text-center text-sm text-gray-600 mt-6">
             Ainda não tem conta?{' '}
             <button
               onClick={() => navigate('/cadastro')}

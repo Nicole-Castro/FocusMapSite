@@ -6,7 +6,9 @@ import {
   LayoutDashboard, 
   LogOut, 
   Menu, 
-  X
+  X,
+  MapPin,
+  History
 } from 'lucide-react';
 
 export default function DashboardLayout({ children }) {
@@ -18,6 +20,8 @@ export default function DashboardLayout({ children }) {
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/dashboard/pacientes', icon: Users, label: 'Lista de Pacientes' },
     { path: '/dashboard/cadastro-paciente', icon: UserPlus, label: 'Cadastrar Paciente' },
+    { path: '/dashboard/pontos-interesse', icon: MapPin, label: 'Pontos de Interesse' },
+    { path: '/dashboard/historico-sessoes', icon: History, label: 'Histórico de Sessões' }
   ];
 
   const handleLogout = () => {
@@ -33,7 +37,7 @@ export default function DashboardLayout({ children }) {
       <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-white border-r border-gray-200">
         <div className="flex items-center justify-center h-24 border-b border-gray-200 bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4">
           <img 
-            src="src\public\logo2.png"
+            src="/images/logo2.png" 
             alt="Focus Map Logo" 
             className="h-45 w-full object-contain"
           />
@@ -74,7 +78,7 @@ export default function DashboardLayout({ children }) {
           <aside className="fixed top-0 left-0 bottom-0 w-64 bg-white shadow-xl">
             <div className="flex items-center justify-between h-24 px-4 border-b border-gray-200 bg-gradient-to-r from-primary-500 to-primary-600">
               <img 
-                src="/src/public/logo.png" 
+                src="/images/logo.png" 
                 alt="Focus Map Logo" 
                 className="h-20 w-auto object-contain"
               />
