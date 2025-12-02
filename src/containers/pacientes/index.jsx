@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
-import { RefreshCw, Search, Eye, Edit2, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  RefreshCw,
+  Search,
+  Eye,
+  Edit2,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { getPatients } from "../../services/getPatient";
+import { useNavigate } from "react-router-dom";
+import { MapPin } from "lucide-react"; // ícone bonito para POI
 
 export default function PacientesList() {
   const [patients, setPatients] = useState([]);
@@ -9,6 +19,12 @@ export default function PacientesList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const navigate = useNavigate();
+
+  const handlePointsOfInterest = (patient) => {
+    navigate(`/dashboard/patient/${patient.id}
+    /points`);
+  };
 
   async function loadPatients() {
     try {
@@ -34,23 +50,16 @@ export default function PacientesList() {
     loadPatients();
   }, []);
 
-  const filteredPatients = patients.filter(p =>
-    p?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPatients = patients.filter(
+    (p) =>
+      p?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p?.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalPages = Math.ceil(filteredPatients.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentPatients = filteredPatients.slice(startIndex, endIndex);
-
-  const handleView = (patient) => {
-    alert(`Visualizar paciente: ${patient.name}`);
-  };
-
-  const handleEdit = (patient) => {
-    alert(`Editar paciente: ${patient.name}`);
-  };
 
   const handleDelete = (patient) => {
     if (confirm(`Tem certeza que deseja excluir o paciente ${patient.name}?`)) {
@@ -61,12 +70,13 @@ export default function PacientesList() {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="bg-white rounded-lg shadow-md">
-
         {/* Header */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">Lista de Pacientes</h2>
+              <h2 className="text-2xl font-bold text-gray-800">
+                Lista de Pacientes
+              </h2>
               <p className="text-gray-600 text-sm mt-1">
                 Total: {filteredPatients.length} paciente(s)
               </p>
@@ -76,13 +86,16 @@ export default function PacientesList() {
               disabled={loading}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:from-primary-600 hover:to-primary-700 transition disabled:opacity-50 shadow-md"
             >
-              <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+              <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
               Atualizar
             </button>
           </div>
 
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={20}
+            />
             <input
               type="text"
               placeholder="Buscar por nome ou email..."
@@ -100,7 +113,10 @@ export default function PacientesList() {
         <div className="p-6">
           {loading && (
             <div className="text-center py-12">
-              <RefreshCw className="animate-spin mx-auto text-primary-500 mb-4" size={40} />
+              <RefreshCw
+                className="animate-spin mx-auto text-primary-500 mb-4"
+                size={40}
+              />
               <p className="text-gray-600">Carregando pacientes...</p>
             </div>
           )}
@@ -115,7 +131,9 @@ export default function PacientesList() {
           {!loading && !error && filteredPatients.length === 0 && (
             <div className="text-center py-12">
               <p className="text-gray-600 text-lg font-medium">
-                {searchTerm ? 'Nenhum paciente encontrado' : 'Nenhum paciente cadastrado'}
+                {searchTerm
+                  ? "Nenhum paciente encontrado"
+                  : "Nenhum paciente cadastrado"}
               </p>
             </div>
           )}
@@ -140,28 +158,28 @@ export default function PacientesList() {
 
                   <tbody className="bg-white divide-y divide-gray-200">
                     {currentPatients.map((patient) => (
-                      <tr key={patient.id} className="hover:bg-gray-50 transition">
+                      <tr
+                        key={patient.id}
+                        className="hover:bg-gray-50 transition"
+                      >
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{patient.name}</div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {patient.name}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-600">{patient.email}</div>
+                          <div className="text-sm text-gray-600">
+                            {patient.email}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <div className="flex items-center justify-center gap-2">
                             <button
-                              onClick={() => handleView(patient)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                              title="Visualizar"
+                              onClick={() => handlePointsOfInterest(patient)}
+                              className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                              title="Pontos de Interesse"
                             >
-                              <Eye size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleEdit(patient)}
-                              className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition"
-                              title="Editar"
-                            >
-                              <Edit2 size={18} />
+                              <MapPin size={18} />
                             </button>
                             <button
                               onClick={() => handleDelete(patient)}
@@ -182,12 +200,16 @@ export default function PacientesList() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
                   <div className="text-sm text-gray-600">
-                    Mostrando {startIndex + 1} a {Math.min(endIndex, filteredPatients.length)} de {filteredPatients.length} pacientes
+                    Mostrando {startIndex + 1} a{" "}
+                    {Math.min(endIndex, filteredPatients.length)} de{" "}
+                    {filteredPatients.length} pacientes
                   </div>
 
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
                       disabled={currentPage === 1}
                       className="flex items-center gap-1 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
                     >
@@ -210,7 +232,9 @@ export default function PacientesList() {
                     ))}
 
                     <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
                       disabled={currentPage === totalPages}
                       className="flex items-center gap-1 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
                     >

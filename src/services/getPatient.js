@@ -1,8 +1,8 @@
-import api from './api';
+import api from "./api";
 
 export async function getPatients(searchTerm = "") {
   try {
-    const response = await api.get('/User/ListPatients', {
+    const response = await api.get("/User/ListPatients", {
       params: {
         searchTerm: searchTerm || null, // envia como query
       },
@@ -19,7 +19,7 @@ export async function getPatients(searchTerm = "") {
       success: false,
       message:
         error.response?.data?.message ||
-        'Erro ao buscar pacientes. Tente novamente.',
+        "Erro ao buscar pacientes. Tente novamente.",
     };
   }
 }
@@ -31,4 +31,8 @@ export async function getTotalPatients() {
     console.error("Erro ao buscar pacientes:", err);
     return [];
   }
+}
+
+export async function getPatientById(id) {
+  return api.get(`/user/${id}`);
 }

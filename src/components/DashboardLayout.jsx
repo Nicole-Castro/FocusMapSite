@@ -20,7 +20,7 @@ export default function DashboardLayout({ children }) {
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/dashboard/pacientes', icon: Users, label: 'Lista de Pacientes' },
     { path: '/dashboard/cadastro-paciente', icon: UserPlus, label: 'Cadastrar Paciente' },
-    { path: '/dashboard/pontos-interesse', icon: MapPin, label: 'Pontos de Interesse' },
+
     { path: '/dashboard/historico-sessoes', icon: History, label: 'Histórico de Sessões' }
   ];
 
