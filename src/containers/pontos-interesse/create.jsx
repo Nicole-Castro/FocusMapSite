@@ -56,7 +56,7 @@ export default function CreatePoint() {
 
           <button
             type="button"
-            onClick={() => navigate(`/points?patientId=${patientId}`)}
+            onClick={() => navigate(`/dashboard/patient/${patientId}/points`)}
             className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
           >
             Cancelar
