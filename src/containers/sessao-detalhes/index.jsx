@@ -1,33 +1,73 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Calendar, Clock, User, MapPin } from 'lucide-react';
+
+import { getSessionById } from "../../services/sessionService";
+import { getSessionDataById } from "../../services/sessionService";
 
 export default function SessaoDetalhes() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  //Mock de dados da sessão
-  const session = {
-    id: id,
-    patientName: 'João Silva',
-    date: '2024-11-28',
-    time: '14:30',
-    duration: '45 min',
-    status: 'Concluída',
-    professional: 'Dr. Carlos Silva',
-    notes: 'Sessão realizada com sucesso. Paciente apresentou boa resposta aos estímulos.',
-    pontosInteresse: ['Português', 'Matemática', 'Música']
-  };
+  const [session, setSession] = useState(null);
+  const [sessionData, setSessionData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      console.log("Carregando sessão:", id);
+
+      const sessionRes = await getSessionById(id);
+      const dataRes = await getSessionDataById(id);
+
+      console.log("Session ->", sessionRes);
+      console.log("SessionData ->", dataRes);
+
+      if (sessionRes) setSession(sessionRes);
+      if (dataRes) setSessionData(dataRes);
+
+      setLoading(false);
+    }
+
+    load();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto p-10 text-center text-gray-600">
+        Carregando sessão...
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="max-w-6xl mx-auto p-10 text-center text-red-500">
+        Nenhuma sessão encontrada.
+      </div>
+    );
+  }
 
   const handleExportData = () => {
+    console.log("Exportando dados:", sessionData);
     alert('Exportando dados da sessão...');
-    //lógica de exportação
   };
 
   return (
     <div className="max-w-6xl mx-auto">
       <div className="bg-white rounded-lg shadow-md p-8">
+        
+        {/* Cabeçalho */}
         <div className="flex items-center justify-between mb-8">
+
+          {/* Botão para Dashboard */}
+<button
+      onClick={() => navigate(`/dashboard/sessao/${id}`)}
+      className="flex items-center gap-2 px-5 py-2 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition shadow"
+    >
+      📊 Ver Dashboard da Sessão
+    </button>
+
           <button
             onClick={() => navigate('/dashboard/historico-sessoes')}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition"
@@ -35,153 +75,90 @@ export default function SessaoDetalhes() {
             <ArrowLeft size={20} />
             <span>Voltar</span>
           </button>
+
           <h2 className="text-2xl font-bold text-gray-800">
             Detalhes da Sessão
           </h2>
+
           <div className="w-20"></div>
         </div>
 
+        {/* Dados básicos */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 p-6 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-3">
             <User className="text-primary-500" size={24} />
             <div>
               <p className="text-sm text-gray-600">Paciente</p>
-              <p className="font-semibold text-gray-800">{session.patientName}</p>
+              <p className="font-semibold text-gray-800">{session.patient_name}</p>
             </div>
           </div>
+
+          
           <div className="flex items-center gap-3">
-            <User className="text-primary-500" size={24} />
+            <Calendar className="text-primary-500" size={24} />
             <div>
-              <p className="text-sm text-gray-600">Profissional</p>
-              <p className="font-semibold text-gray-800">{session.professional}</p>
+              <p className="text-sm text-gray-600">Data Início</p>
+              <p className="font-semibold text-gray-800">
+                {new Date(session.session_start_time).toLocaleDateString('pt-BR')}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <Calendar className="text-primary-500" size={24} />
             <div>
-              <p className="text-sm text-gray-600">Data</p>
+              <p className="text-sm text-gray-600">Data Fim</p>
               <p className="font-semibold text-gray-800">
-                {new Date(session.date).toLocaleDateString('pt-BR')}
+                {new Date(session.session_end_time).toLocaleDateString('pt-BR')}
               </p>
             </div>
           </div>
+
           <div className="flex items-center gap-3">
             <Clock className="text-primary-500" size={24} />
             <div>
-              <p className="text-sm text-gray-600">Horário e Duração</p>
-              <p className="font-semibold text-gray-800">{session.time} - {session.duration}</p>
+              <p className="text-sm text-gray-600">Duração</p>
+              <p className="font-semibold text-gray-800">
+                 {session.session_duration}
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Visualização EEG</h3>
-          
-          <div className="border border-gray-200 rounded-lg p-6">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 rounded-full bg-gray-100 border-2 border-gray-300 flex items-center justify-center">
-                <User className="text-gray-400" size={32} />
-              </div>
-              <div>
-                <p className="font-semibold text-gray-800">{session.patientName}</p>
-                <p className="text-sm text-gray-600">Sessão #{session.id}</p>
-              </div>
-            </div>
+        {/* Dados brutos coletados */}
+        <div className="mb-10">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            Dados da Sessão (EEG)
+          </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="border border-gray-200 rounded-lg p-4">
-                <svg className="w-full h-16 text-gray-600" viewBox="0 0 400 60">
-                  <path
-                    d="M 0,30 Q 20,10 40,30 T 80,30 T 120,30 T 160,30 T 200,30 T 240,30 T 280,30 T 320,30 T 360,30 T 400,30"
-                    stroke="currentColor"
-                    fill="none"
-                    strokeWidth="1.5"
-                  />
-                  <path
-                    d="M 0,35 Q 20,20 40,35 T 80,35 T 120,35 T 160,35 T 200,35 T 240,35 T 280,35 T 320,35 T 360,35 T 400,35"
-                    stroke="currentColor"
-                    fill="none"
-                    strokeWidth="1.5"
-                  />
-                  <path
-                    d="M 0,40 Q 20,25 40,40 T 80,40 T 120,40 T 160,40 T 200,40 T 240,40 T 280,40 T 320,40 T 360,40 T 400,40"
-                    stroke="currentColor"
-                    fill="none"
-                    strokeWidth="1.5"
-                  />
-                </svg>
-              </div>
+          <p className="text-gray-600 mb-2">
+            Registros capturados: <b>{sessionData.length}</b>
+          </p>
 
-              <div className="border border-gray-200 rounded-lg p-4">
-                <svg className="w-full h-16 text-gray-600" viewBox="0 0 400 60">
-                  <path
-                    d="M 0,30 Q 20,15 40,30 T 80,30 T 120,30 T 160,30 T 200,30 T 240,30 T 280,30 T 320,30 T 360,30 T 400,30"
-                    stroke="currentColor"
-                    fill="none"
-                    strokeWidth="1.5"
-                  />
-                  <path
-                    d="M 0,35 Q 20,22 40,35 T 80,35 T 120,35 T 160,35 T 200,35 T 240,35 T 280,35 T 320,35 T 360,35 T 400,35"
-                    stroke="currentColor"
-                    fill="none"
-                    strokeWidth="1.5"
-                  />
-                  <path
-                    d="M 0,40 Q 20,28 40,40 T 80,40 T 120,40 T 160,40 T 200,40 T 240,40 T 280,40 T 320,40 T 360,40 T 400,40"
-                    stroke="currentColor"
-                    fill="none"
-                    strokeWidth="1.5"
-                  />
-                </svg>
-              </div>
-            </div>
-
-            <div className="mt-6 border border-gray-200 rounded-lg p-4">
-              <svg className="w-full h-20 text-gray-600" viewBox="0 0 800 80">
-                <path
-                  d="M 0,40 Q 40,20 80,40 T 160,40 T 240,40 T 320,40 T 400,40 T 480,40 T 560,40 T 640,40 T 720,40 T 800,40"
-                  stroke="currentColor"
-                  fill="none"
-                  strokeWidth="2"
-                />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Pontos de Interesse Monitorados</h3>
-          <div className="flex flex-wrap gap-2">
-            {session.pontosInteresse.map((ponto, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-100 text-primary-700 rounded-lg"
-              >
-                <MapPin size={16} />
-                <span className="font-medium">{ponto}</span>
+          <div className="p-4 bg-gray-50 rounded-lg border max-h-64 overflow-auto text-sm">
+            {sessionData.map((d, i) => (
+              <div key={i} className="border-b py-2 text-gray-700">
+                <p><b>Timestamp:</b> {d.timestamp_of_record}</p>
+                <p><b>Delta:</b> {d.delta_power}, <b>Theta:</b> {d.theta_power}</p>
+                <p><b>Alpha:</b> {d.low_alpha_power} - {d.high_alpha_power}</p>
+                <p><b>Beta:</b> {d.low_beta_power} - {d.high_beta_power}</p>
+                <p><b>Gamma:</b> {d.low_gamma_power} - {d.middle_gamma_power}</p>
+                <p><b>Atenção:</b> {d.attention_value}, <b>Meditação:</b> {d.meditation_value}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {session.notes && (
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Observações</h3>
-            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <p className="text-gray-700">{session.notes}</p>
-            </div>
-          </div>
-        )}
-
+        {/* Botão exportar */}
         <div className="flex justify-end">
           <button
             onClick={handleExportData}
             className="flex items-center gap-2 px-8 py-3 bg-gray-800 text-white font-semibold rounded-lg hover:bg-gray-900 transition shadow-md hover:shadow-lg"
           >
             <Download size={20} />
-            Exportar dados da Sessão
+            Exportar dados
           </button>
         </div>
+
       </div>
     </div>
   );

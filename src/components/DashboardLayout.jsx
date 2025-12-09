@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { 
   Users, 
   UserPlus, 
@@ -7,11 +7,10 @@ import {
   LogOut, 
   Menu, 
   X,
-  MapPin,
   History
 } from 'lucide-react';
 
-export default function DashboardLayout({ children }) {
+export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,7 +19,6 @@ export default function DashboardLayout({ children }) {
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/dashboard/pacientes', icon: Users, label: 'Lista de Pacientes' },
     { path: '/dashboard/cadastro-paciente', icon: UserPlus, label: 'Cadastrar Paciente' },
-
     { path: '/dashboard/historico-sessoes', icon: History, label: 'Histórico de Sessões' }
   ];
 
@@ -33,7 +31,7 @@ export default function DashboardLayout({ children }) {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Desktop */}
+      {/* Sidebar Desktop */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-white border-r border-gray-200">
         <div className="flex items-center justify-center h-24 border-b border-gray-200 bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4">
           <img 
@@ -71,10 +69,14 @@ export default function DashboardLayout({ children }) {
         </div>
       </aside>
 
-      {/* Mobile */}
+      {/* Sidebar Mobile */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setSidebarOpen(false)} />
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50"
+            onClick={() => setSidebarOpen(false)}
+          />
+
           <aside className="fixed top-0 left-0 bottom-0 w-64 bg-white shadow-xl">
             <div className="flex items-center justify-between h-24 px-4 border-b border-gray-200 bg-gradient-to-r from-primary-500 to-primary-600">
               <img 
@@ -120,6 +122,7 @@ export default function DashboardLayout({ children }) {
         </div>
       )}
 
+      {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
 
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-8">
@@ -129,16 +132,18 @@ export default function DashboardLayout({ children }) {
           >
             <Menu size={24} />
           </button>
+
           <h1 className="text-xl font-semibold text-gray-800">
             {menuItems.find(item => isActive(item.path))?.label || 'Dashboard'}
           </h1>
+
           <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 flex items-center justify-center text-white font-semibold">
             U
           </div>
         </header>
 
         <main className="flex-1 overflow-auto p-4 lg:p-8">
-          {children}
+          <Outlet /> {/* AQUI entram as páginas */}
         </main>
       </div>
     </div>

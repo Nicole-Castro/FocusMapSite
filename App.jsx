@@ -1,94 +1,52 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
 import Login from "./src/containers/login";
 import Cadastro from "./src/containers/cadastro";
 import RecuperarSenha from "./src/containers/recuperar-senha";
 import DashboardLayout from "./src/components/DashboardLayout";
 import Dashboard from "./src/containers/dashboard";
+
 import CadastroPaciente from "./src/containers/cadastro-paciente";
 import PacientesList from "./src/containers/pacientes";
+
 import PontosInteresse from "./src/containers/pontos-interesse";
 import PointsCreate from "./src/containers/pontos-interesse/create";
 import PointsEdit from "./src/containers/pontos-interesse/edit";
+
 import HistoricoSessoes from "./src/containers/historico-sessoes";
 import SessaoDetalhes from "./src/containers/sessao-detalhes";
+import DashboardSessao from "./src/containers/session-dashboard";
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Rotas públicas (sem layout) */}
+
+        {/* Rotas públicas */}
         <Route path="/" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/recuperar-senha" element={<RecuperarSenha />} />
 
-        {/* Rotas protegidas (com layout do dashboard) */}
-        <Route
-          path="/dashboard"
-          element={
-            <DashboardLayout>
-              <Dashboard />
-            </DashboardLayout>
-          }
-        />
-        <Route
-          path="/dashboard/pacientes"
-          element={
-            <DashboardLayout>
-              <PacientesList />
-            </DashboardLayout>
-          }
-        />
-        <Route
-          path="/dashboard/cadastro-paciente"
-          element={
-            <DashboardLayout>
-              <CadastroPaciente />
-            </DashboardLayout>
-          }
-        />
-        <Route
-          path="/dashboard/patient/:patientId/points"
-          element={
-            <DashboardLayout>
-              <PontosInteresse />
-            </DashboardLayout>
-          }
-        />
+        {/* Área protegida (Dashboard) */}
+        <Route path="/dashboard" element={<DashboardLayout />}>
 
-        <Route
-          path="/dashboard/patient/:patientId/points/edit/:id"
-          element={
-            <DashboardLayout>
-              <PointsEdit />
-            </DashboardLayout>
-          }
-        />
+          <Route index element={<Dashboard />} />
 
-        <Route
-          path="/dashboard/patient/:patientId/points/create"
-          element={
-            <DashboardLayout>
-              <PointsCreate />
-            </DashboardLayout>
-          }
-        />
+          {/* Pacientes */}
+          <Route path="pacientes" element={<PacientesList />} />
+          <Route path="cadastro-paciente" element={<CadastroPaciente />} />
 
-        <Route
-          path="/dashboard/historico-sessoes"
-          element={
-            <DashboardLayout>
-              <HistoricoSessoes />
-            </DashboardLayout>
-          }
-        />
-        <Route
-          path="/dashboard/sessao-detalhes/:id"
-          element={
-            <DashboardLayout>
-              <SessaoDetalhes />
-            </DashboardLayout>
-          }
-        />
+          {/* Pontos de interesse */}
+          <Route path="patient/:patientId/points" element={<PontosInteresse />} />
+          <Route path="patient/:patientId/points/create" element={<PointsCreate />} />
+          <Route path="patient/:patientId/points/edit/:id" element={<PointsEdit />} />
+
+          {/* Sessões */}
+          <Route path="historico-sessoes" element={<HistoricoSessoes />} />
+          <Route path="sessao-detalhes/:id" element={<SessaoDetalhes />} />
+          <Route path="sessao/:id" element={<DashboardSessao />} />
+
+        </Route>
       </Routes>
     </Router>
   );

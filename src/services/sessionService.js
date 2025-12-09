@@ -1,19 +1,27 @@
 import api from "./api.js";
 export async function getSessionsByProfessional(professionalId) {
-  try {
-    const res = await api.get(`/Session/professional/${professionalId}`);
-    return res.data.data || [];
-  } catch (err) {
-    console.error("Erro ao buscar sessões:", err);
-    return [];
-  }
+  const res = await api.get(`/Session/professional`);
+  return res.data.data; // pega apenas a lista
 }
-export async function getSessionDataByPatient(patientId) {
-  try {
-    const res = await api.get(`/SessionData/patient/${patientId}`);
-    return res.data.data || [];
-  } catch (err) {
-    console.error("Erro ao buscar session data:", err);
-    return [];
-  }
+
+export async function getSessionsByPatient(patientId) {
+  const res = await api.get(`/Session/patient/${patientId}`);
+  return res.data.data; 
 }
+
+export async function getSessionById(id) {
+  const res = await api.get(`/Session/${id}`);
+  return res.data.data;
+}
+
+export async function getSessionDataById(id) {
+  const res = await api.get(`/SessionData/session/${id}`);
+  return res.data.data;
+}
+
+export async function getSessionDashboard(id) {
+  const res = await api.get(`/Session/${id}/dashboard`);
+  return res.data.data;
+}
+
+
