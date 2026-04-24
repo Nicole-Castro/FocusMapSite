@@ -1,27 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Calendar, Clock, User, MapPin } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  Download,
+  Calendar,
+  Clock,
+  User,
+  Activity,
+} from "lucide-react";
 
-import { getSessionById } from "../../services/sessionService";
-import { getSessionDataById } from "../../services/sessionService";
+import {
+  getSessionById,
+  getSessionDataById,
+} from "../../services/sessionService";
 
 export default function SessaoDetalhes() {
   const { id } = useParams();
   const navigate = useNavigate();
-
+  const C = {
+    primary: "#f86f26",
+    attention: "#3b82f6",
+    meditation: "#10b981",
+  };
   const [session, setSession] = useState(null);
   const [sessionData, setSessionData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
-      console.log("Carregando sessão:", id);
-
       const sessionRes = await getSessionById(id);
       const dataRes = await getSessionDataById(id);
-
-      console.log("Session ->", sessionRes);
-      console.log("SessionData ->", dataRes);
 
       if (sessionRes) setSession(sessionRes);
       if (dataRes) setSessionData(dataRes);
@@ -34,7 +42,7 @@ export default function SessaoDetalhes() {
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto p-10 text-center text-gray-600">
+      <div className="flex items-center justify-center h-64 text-gray-500">
         Carregando sessão...
       </div>
     );
@@ -42,124 +50,185 @@ export default function SessaoDetalhes() {
 
   if (!session) {
     return (
-      <div className="max-w-6xl mx-auto p-10 text-center text-red-500">
-        Nenhuma sessão encontrada.
+      <div className="flex items-center justify-center h-64 text-red-500">
+        Sessão não encontrada.
       </div>
     );
   }
 
+  const formatDate = (d) =>
+    new Date(d).toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
   const handleExportData = () => {
-    console.log("Exportando dados:", sessionData);
-    alert('Exportando dados da sessão...');
+    console.log("Exportando:", sessionData);
+    alert("Exportando dados...");
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="bg-white rounded-lg shadow-md p-8">
-        
-        {/* Cabeçalho */}
-        <div className="flex items-center justify-between mb-8">
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
+      {/* HEADER */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <button
+          onClick={() => navigate("/dashboard/historico-sessoes")}
+          className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition"
+        >
+          <ArrowLeft size={16} />
+          Voltar
+        </button>
 
-          {/* Botão para Dashboard */}
-<button
-      onClick={() => navigate(`/dashboard/sessao/${id}`)}
-      className="flex items-center gap-2 px-5 py-2 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition shadow"
-    >
-      📊 Ver Dashboard da Sessão
-    </button>
-
-          <button
-            onClick={() => navigate('/dashboard/historico-sessoes')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition"
-          >
-            <ArrowLeft size={20} />
-            <span>Voltar</span>
-          </button>
-
-          <h2 className="text-2xl font-bold text-gray-800">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-bold text-gray-800">
             Detalhes da Sessão
-          </h2>
-
-          <div className="w-20"></div>
+          </h1>
         </div>
 
-        {/* Dados básicos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 p-6 bg-gray-50 rounded-lg">
-          <div className="flex items-center gap-3">
-            <User className="text-primary-500" size={24} />
-            <div>
-              <p className="text-sm text-gray-600">Paciente</p>
-              <p className="font-semibold text-gray-800">{session.patient_name}</p>
-            </div>
-          </div>
+        <button
+          onClick={() => navigate(`/dashboard/sessao/${id}`)}
+          className="px-4 py-2 text-white text-sm font-semibold rounded-lg shadow transition"
+          style={{
+            background: "linear-gradient(135deg, #ff9e3d, #f86f26)",
+          }}
+        >
+          📊 Ver Dashboard
+        </button>
+      </div>
 
-          
-          <div className="flex items-center gap-3">
-            <Calendar className="text-primary-500" size={24} />
-            <div>
-              <p className="text-sm text-gray-600">Data Início</p>
-              <p className="font-semibold text-gray-800">
-                {new Date(session.session_start_time).toLocaleDateString('pt-BR')}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Calendar className="text-primary-500" size={24} />
-            <div>
-              <p className="text-sm text-gray-600">Data Fim</p>
-              <p className="font-semibold text-gray-800">
-                {new Date(session.session_end_time).toLocaleDateString('pt-BR')}
-              </p>
-            </div>
-          </div>
+      {/* INFO CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card icon={User} label="Paciente" value={session.patient_name} />
+        <Card
+          icon={Calendar}
+          label="Início"
+          value={formatDate(session.session_start_time)}
+        />
+        <Card
+          icon={Calendar}
+          label="Fim"
+          value={formatDate(session.session_end_time)}
+        />
+        <Card icon={Clock} label="Duração" value={session.session_duration} />
+      </div>
 
-          <div className="flex items-center gap-3">
-            <Clock className="text-primary-500" size={24} />
-            <div>
-              <p className="text-sm text-gray-600">Duração</p>
-              <p className="font-semibold text-gray-800">
-                 {session.session_duration}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Dados brutos coletados */}
-        <div className="mb-10">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            Dados da Sessão (EEG)
-          </h3>
-
-          <p className="text-gray-600 mb-2">
-            Registros capturados: <b>{sessionData.length}</b>
+      {/* RESUMO */}
+      <div className="bg-white border rounded-xl p-6 shadow-sm flex items-center justify-between">
+        <div>
+          <p className="text-sm text-gray-500">Total de registros EEG</p>
+          <p className="text-3xl font-bold text-gray-800">
+            {sessionData.length}
           </p>
 
-          <div className="p-4 bg-gray-50 rounded-lg border max-h-64 overflow-auto text-sm">
-            {sessionData.map((d, i) => (
-              <div key={i} className="border-b py-2 text-gray-700">
-                <p><b>Timestamp:</b> {d.timestamp_of_record}</p>
-                <p><b>Delta:</b> {d.delta_power}, <b>Theta:</b> {d.theta_power}</p>
-                <p><b>Alpha:</b> {d.low_alpha_power} - {d.high_alpha_power}</p>
-                <p><b>Beta:</b> {d.low_beta_power} - {d.high_beta_power}</p>
-                <p><b>Gamma:</b> {d.low_gamma_power} - {d.middle_gamma_power}</p>
-                <p><b>Atenção:</b> {d.attention_value}, <b>Meditação:</b> {d.meditation_value}</p>
-              </div>
-            ))}
+          {/* insight rápido */}
+          <p className="text-xs text-gray-400 mt-1">
+            Dados coletados durante a sessão
+          </p>
+        </div>
+
+        <div className="flex flex-col items-end gap-2">
+          <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+            <Activity className="text-blue-500" />
           </div>
-        </div>
 
-        {/* Botão exportar */}
-        <div className="flex justify-end">
-          <button
-            onClick={handleExportData}
-            className="flex items-center gap-2 px-8 py-3 bg-gray-800 text-white font-semibold rounded-lg hover:bg-gray-900 transition shadow-md hover:shadow-lg"
-          >
-            <Download size={20} />
-            Exportar dados
-          </button>
+          <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 font-medium">
+            Sessão válida
+          </span>
         </div>
-
       </div>
+
+      {/* LISTA EEG */}
+      <div className="max-h-96 overflow-auto divide-y text-sm">
+        {sessionData.map((d, i) => {
+          const att = d.attention_value;
+          const med = d.meditation_value;
+
+          const attColor =
+            att >= 75
+              ? "bg-green-100 text-green-700"
+              : att >= 50
+                ? "bg-yellow-100 text-yellow-700"
+                : "bg-red-100 text-red-700";
+
+          return (
+            <div
+              key={i}
+              className="p-4 hover:bg-gray-50 transition flex flex-col gap-3"
+            >
+              {/* timestamp */}
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-400">
+                  {new Date(d.timestamp_of_record).toLocaleTimeString()}
+                </span>
+
+                {/* chips */}
+                <div className="flex gap-2">
+                  <span
+                    className={`text-xs px-2 py-1 rounded font-semibold ${attColor}`}
+                  >
+                    Atenção: {att}
+                  </span>
+
+                  <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700 font-semibold">
+                    Meditação: {med}
+                  </span>
+                </div>
+              </div>
+
+              {/* métricas */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <Metric label="Delta" value={d.delta_power} />
+                <Metric label="Theta" value={d.theta_power} />
+                <Metric
+                  label="Alpha"
+                  value={`${d.low_alpha_power}-${d.high_alpha_power}`}
+                />
+                <Metric
+                  label="Beta"
+                  value={`${d.low_beta_power}-${d.high_beta_power}`}
+                />
+                <Metric
+                  label="Gamma"
+                  value={`${d.low_gamma_power}-${d.middle_gamma_power}`}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* COMPONENTES AUXILIARES */
+function Card({ icon: Icon, label, value }) {
+  return (
+    <div className="bg-white border rounded-xl p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition">
+      <div
+        className="w-10 h-10 rounded-lg flex items-center justify-center"
+        style={{
+          background: "linear-gradient(135deg, #ffedd5, #fed7aa)",
+        }}
+      >
+        <Icon className="text-orange-500" size={18} />
+      </div>
+
+      <div>
+        <p className="text-xs text-gray-400">{label}</p>
+        <p className="text-sm font-semibold text-gray-800">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function Metric({ label, value }) {
+  return (
+    <div className="flex flex-col text-xs">
+      <span className="text-gray-400">{label}</span>
+      <span className="font-semibold text-gray-800">{value}</span>
     </div>
   );
 }

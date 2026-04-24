@@ -2,15 +2,14 @@ import { useEffect, useState } from "react";
 import {
   RefreshCw,
   Search,
-  Eye,
-  Edit2,
   Trash2,
   ChevronLeft,
   ChevronRight,
+  MapPin,
+  Users,
 } from "lucide-react";
 import { getPatients } from "../../services/getPatient";
 import { useNavigate } from "react-router-dom";
-import { MapPin } from "lucide-react"; // ícone bonito para POI
 
 export default function PacientesList() {
   const [patients, setPatients] = useState([]);
@@ -18,12 +17,12 @@ export default function PacientesList() {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+
+  const itemsPerPage = 8;
   const navigate = useNavigate();
 
   const handlePointsOfInterest = (patient) => {
-    navigate(`/dashboard/patient/${patient.id}
-    /points`);
+    navigate(`/dashboard/patient/${patient.id}/points`);
   };
 
   async function loadPatients() {
@@ -38,8 +37,7 @@ export default function PacientesList() {
       }
 
       setPatients(res.data ?? []);
-    } catch (err) {
-      console.error("Erro ao carregar pacientes:", err);
+    } catch {
       setError("Erro ao conectar com o servidor");
     } finally {
       setLoading(false);
@@ -53,201 +51,181 @@ export default function PacientesList() {
   const filteredPatients = patients.filter(
     (p) =>
       p?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+      p?.email?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const totalPages = Math.ceil(filteredPatients.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentPatients = filteredPatients.slice(startIndex, endIndex);
+  const currentPatients = filteredPatients.slice(
+    startIndex,
+    startIndex + itemsPerPage,
+  );
 
   const handleDelete = (patient) => {
-    if (confirm(`Tem certeza que deseja excluir o paciente ${patient.name}?`)) {
-      alert(`Paciente ${patient.name} excluído!`);
+    if (confirm(`Excluir ${patient.name}?`)) {
+      alert("Implementar delete real aqui");
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="bg-white rounded-lg shadow-md">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">
-                Lista de Pacientes
-              </h2>
-              <p className="text-gray-600 text-sm mt-1">
-                Total: {filteredPatients.length} paciente(s)
-              </p>
-            </div>
-            <button
-              onClick={loadPatients}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:from-primary-600 hover:to-primary-700 transition disabled:opacity-50 shadow-md"
-            >
-              <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
-              Atualizar
-            </button>
-          </div>
-
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              size={20}
-            />
-            <input
-              type="text"
-              placeholder="Buscar por nome ou email..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
-            />
-          </div>
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      {/* HEADER */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <Users size={22} className="text-primary-500" />
+            Pacientes
+          </h1>
+          <p className="text-sm text-gray-500">
+            {filteredPatients.length} paciente(s) encontrado(s)
+          </p>
         </div>
 
-        {/* Tabela */}
-        <div className="p-6">
-          {loading && (
-            <div className="text-center py-12">
-              <RefreshCw
-                className="animate-spin mx-auto text-primary-500 mb-4"
-                size={40}
-              />
-              <p className="text-gray-600">Carregando pacientes...</p>
-            </div>
-          )}
+        <div className="flex items-center gap-3">
+          {/* CTA PRINCIPAL */}
+          <button
+            onClick={() => navigate("/dashboard/cadastro-paciente")}
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-semibold shadow-md hover:scale-105 hover:shadow-lg transition"
+          >
+            ➕ Novo Paciente
+          </button>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-              <p className="font-semibold">Erro:</p>
-              <p>{error}</p>
-            </div>
-          )}
-
-          {!loading && !error && filteredPatients.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-600 text-lg font-medium">
-                {searchTerm
-                  ? "Nenhum paciente encontrado"
-                  : "Nenhum paciente cadastrado"}
-              </p>
-            </div>
-          )}
-
-          {!loading && !error && currentPatients.length > 0 && (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b-2 border-gray-200">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Nome
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Ações
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {currentPatients.map((patient) => (
-                      <tr
-                        key={patient.id}
-                        className="hover:bg-gray-50 transition"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {patient.name}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-600">
-                            {patient.email}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => handlePointsOfInterest(patient)}
-                              className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
-                              title="Pontos de Interesse"
-                            >
-                              <MapPin size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(patient)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                              title="Excluir"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Paginação */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
-                  <div className="text-sm text-gray-600">
-                    Mostrando {startIndex + 1} a{" "}
-                    {Math.min(endIndex, filteredPatients.length)} de{" "}
-                    {filteredPatients.length} pacientes
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.max(prev - 1, 1))
-                      }
-                      disabled={currentPage === 1}
-                      className="flex items-center gap-1 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    >
-                      <ChevronLeft size={16} />
-                      Anterior
-                    </button>
-
-                    {[...Array(totalPages)].map((_, index) => (
-                      <button
-                        key={index + 1}
-                        onClick={() => setCurrentPage(index + 1)}
-                        className={`px-3 py-2 text-sm rounded-lg transition ${
-                          currentPage === index + 1
-                            ? "bg-primary-500 text-white font-semibold"
-                            : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
-                        }`}
-                      >
-                        {index + 1}
-                      </button>
-                    ))}
-
-                    <button
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                      }
-                      disabled={currentPage === totalPages}
-                      className="flex items-center gap-1 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    >
-                      Próxima
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+          {/* REFRESH MENOR */}
+          <button
+            onClick={loadPatients}
+            className="p-2.5 border rounded-lg hover:bg-gray-100 transition"
+            title="Atualizar lista"
+          >
+            <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+          </button>
         </div>
       </div>
+
+      {/* SEARCH */}
+      <div className="bg-white border rounded-xl p-4 shadow-sm">
+        <div className="relative">
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            size={18}
+          />
+          <input
+            type="text"
+            placeholder="Buscar paciente..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full pl-10 pr-4 py-3 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-primary-400 outline-none transition"
+          />
+        </div>
+      </div>
+
+      {/* LOADING / ERROR */}
+      {loading && (
+        <div className="text-center py-16 text-gray-500">
+          <RefreshCw className="animate-spin mx-auto mb-4" size={36} />
+          Carregando pacientes...
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
+          {error}
+        </div>
+      )}
+
+      {/* EMPTY */}
+      {!loading && filteredPatients.length === 0 && (
+        <div className="text-center py-16 text-gray-500">
+          Nenhum paciente encontrado
+        </div>
+      )}
+
+      {/* LISTA */}
+      {!loading && currentPatients.length > 0 && (
+        <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
+          {/* HEADER TABELA */}
+          <div className="grid grid-cols-3 px-6 py-3 bg-gray-50 text-xs font-semibold text-gray-600 uppercase">
+            <span>Paciente</span>
+            <span>Email</span>
+            <span className="text-center">Ações</span>
+          </div>
+
+          {/* LINHAS */}
+          {currentPatients.map((patient) => (
+            <div
+              key={patient.id}
+              className="grid grid-cols-3 px-6 py-4 items-center border-t hover:bg-gray-50 transition group"
+            >
+              {/* PACIENTE */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white flex items-center justify-center font-semibold">
+                  {patient.name?.charAt(0) || "P"}
+                </div>
+
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {patient.name}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    ID: {patient.id?.slice(0, 6)}
+                  </p>
+                </div>
+              </div>
+
+              {/* EMAIL */}
+              <div className="text-sm text-gray-600">{patient.email}</div>
+
+              {/* AÇÕES */}
+              <div className="flex justify-center gap-2">
+                <button
+                  onClick={() => handlePointsOfInterest(patient)}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition"
+                >
+                  <MapPin size={14} />
+                  POIs
+                </button>
+
+                <button
+                  onClick={() => handleDelete(patient)}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"
+                >
+                  <Trash2 size={14} />
+                  Excluir
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* PAGINAÇÃO */}
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-gray-500">
+            Página {currentPage} de {totalPages}
+          </span>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className="p-2 border rounded-lg hover:bg-gray-100 disabled:opacity-40"
+            >
+              <ChevronLeft size={16} />
+            </button>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="p-2 border rounded-lg hover:bg-gray-100 disabled:opacity-40"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

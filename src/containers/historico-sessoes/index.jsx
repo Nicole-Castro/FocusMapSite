@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, Clock, User, CheckCircle, Hourglass } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  User,
+  CheckCircle,
+  Hourglass,
+  Filter,
+} from "lucide-react";
 import { getSessionsByProfessional } from "../../services/sessionService";
 
 export default function HistoricoSessoes() {
@@ -18,15 +25,17 @@ export default function HistoricoSessoes() {
         const data = await getSessionsByProfessional();
         setSessions(data || []);
 
-        // montar lista única de pacientes
         const patientList = [
           ...new Map(
-            data.map((s) => [s.patient_id, { id: s.patient_id, name: s.patient_name ?? "Paciente" }])
+            data.map((s) => [
+              s.patient_id,
+              { id: s.patient_id, name: s.patient_name ?? "Paciente" },
+            ]),
           ).values(),
         ];
-        setPatients(patientList);
 
-        setFiltered(data); // inicia com tudo
+        setPatients(patientList);
+        setFiltered(data);
       } catch (err) {
         console.error("Erro ao carregar sessões:", err);
       }
@@ -36,28 +45,17 @@ export default function HistoricoSessoes() {
     load();
   }, []);
 
-  // aplica o filtro quando o paciente mudar
   useEffect(() => {
-    if (!selectedPatientId) {
-      setFiltered(sessions);
-      return;
-    }
+    if (!selectedPatientId) return setFiltered(sessions);
 
-    setFiltered(
-      sessions.filter((s) => s.patient_id === selectedPatientId)
-    );
+    setFiltered(sessions.filter((s) => s.patient_id === selectedPatientId));
   }, [selectedPatientId, sessions]);
 
   const handleViewDetails = (sessionId) => {
     navigate(`/dashboard/sessao-detalhes/${sessionId}`);
   };
 
-  const formatDate = (iso) =>
-    new Date(iso).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+  const formatDate = (iso) => new Date(iso).toLocaleDateString("pt-BR");
 
   const formatTime = (iso) =>
     new Date(iso).toLocaleTimeString("pt-BR", {
@@ -67,118 +65,129 @@ export default function HistoricoSessoes() {
 
   const calculateDuration = (start, end) => {
     if (!end) return null;
-
     const ms = new Date(end) - new Date(start);
-    const min = Math.floor(ms / 60000);
-    return `${min} min`;
+    return `${Math.floor(ms / 60000)} min`;
   };
 
   if (loading) {
-    return <div className="p-8 text-center">Carregando sessões...</div>;
+    return (
+      <div className="flex justify-center items-center h-64 text-gray-500">
+        Carregando sessões...
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="bg-white rounded-lg shadow-md p-8">
-
-        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-          Histórico de Sessões
-        </h2>
-
-        {/* 🔍 FILTRO POR PACIENTE */}
-        <div className="mb-6">
-          <label className="block text-gray-700 font-medium mb-2">
-            Filtrar por paciente:
-          </label>
-
-          <select
-            className="w-full p-3 border border-gray-300 rounded-lg"
-            value={selectedPatientId}
-            onChange={(e) => setSelectedPatientId(e.target.value)}
-          >
-            <option value="">Todos os pacientes</option>
-
-            {patients.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
+      {/* HEADER */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Histórico de Sessões
+          </h1>
+          <p className="text-sm text-gray-500">
+            Visualize e acompanhe as sessões realizadas
+          </p>
         </div>
 
-        {filtered.length === 0 ? (
-          <div className="text-center py-12">
-            <Calendar className="mx-auto text-gray-400 mb-4" size={48} />
-            <p className="text-gray-600 text-lg font-medium">
-              Nenhuma sessão encontrada
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filtered.map((session) => {
-              const duration = calculateDuration(
-                session.session_start_time,
-                session.session_end_time
-              );
+        <div className="text-sm text-gray-400">{filtered.length} sessões</div>
+      </div>
 
-              return (
-                <div
-                  key={session.id}
-                  className="border border-gray-200 rounded-lg p-6 hover:border-primary-300 hover:shadow-md transition"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-full bg-gray-100 border-2 border-gray-300 flex items-center justify-center">
-                        <User className="text-gray-400" size={32} />
-                      </div>
+      {/* FILTRO */}
+      <div className="bg-white border rounded-xl p-4 shadow-sm flex items-center gap-4 flex-wrap">
+        <Filter size={18} className="text-gray-400" />
 
-                      <div className="flex flex-col gap-1">
-                        {/* Nome do paciente */}
-                        <span className="font-semibold text-gray-900 text-lg">
-                          {session.patient_name}
+        <select
+          className="flex-1 min-w-[220px] p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400"
+          value={selectedPatientId}
+          onChange={(e) => setSelectedPatientId(e.target.value)}
+        >
+          <option value="">Todos os pacientes</option>
+          {patients.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* LISTA */}
+      {filtered.length === 0 ? (
+        <div className="text-center py-16 text-gray-500">
+          <Calendar size={48} className="mx-auto mb-4 opacity-40" />
+          <p className="text-lg font-medium">Nenhuma sessão encontrada</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filtered.map((session) => {
+            const duration = calculateDuration(
+              session.session_start_time,
+              session.session_end_time,
+            );
+
+            const isFinished = !!session.session_end_time;
+
+            return (
+              <div
+                key={session.id}
+                className="bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition group"
+              >
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  {/* ESQUERDA */}
+                  <div className="flex items-center gap-4">
+                    {/* Avatar */}
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-lg shadow">
+                      {session.patient_name?.charAt(0) || "P"}
+                    </div>
+
+                    {/* Infos */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-gray-900 text-lg">
+                        {session.patient_name}
+                      </span>
+
+                      <div className="flex gap-4 text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Calendar size={14} />
+                          {formatDate(session.session_start_time)}
                         </span>
 
-                        {/* Data e hora */}
-                        <div className="flex gap-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-2">
-                            <Calendar size={16} />
-                            <span>{formatDate(session.session_start_time)}</span>
-                          </div>
+                        <span className="flex items-center gap-1">
+                          <Clock size={14} />
+                          {formatTime(session.session_start_time)}
+                        </span>
+                      </div>
 
-                          <div className="flex items-center gap-2">
-                            <Clock size={16} />
-                            <span>{formatTime(session.session_start_time)}</span>
-                          </div>
-                        </div>
-
-                        {/* Status */}
-                        {session.session_end_time ? (
-                          <div className="flex items-center gap-2 text-green-600 text-sm mt-1">
-                            <CheckCircle size={16} />
-                            <span>Finalizada ({duration})</span>
-                          </div>
+                      {/* STATUS */}
+                      <div>
+                        {isFinished ? (
+                          <span className="inline-flex items-center gap-2 text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium">
+                            <CheckCircle size={12} />
+                            Finalizada ({duration})
+                          </span>
                         ) : (
-                          <div className="flex items-center gap-2 text-yellow-600 text-sm mt-1">
-                            <Hourglass size={16} />
-                            <span>Em andamento</span>
-                          </div>
+                          <span className="inline-flex items-center gap-2 text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-medium">
+                            <Hourglass size={12} />
+                            Em andamento
+                          </span>
                         )}
                       </div>
                     </div>
-
-                    <button
-                      onClick={() => handleViewDetails(session.id)}
-                      className="px-6 py-3 bg-gray-800 text-white font-medium rounded-lg hover:bg-gray-900 transition shadow-md hover:shadow-lg"
-                    >
-                      Ver detalhes
-                    </button>
                   </div>
+
+                  {/* DIREITA */}
+                  <button
+                    onClick={() => handleViewDetails(session.id)}
+                    className="px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-black transition shadow group-hover:scale-[1.03]"
+                  >
+                    Ver detalhes →
+                  </button>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

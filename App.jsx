@@ -16,12 +16,12 @@ import PointsEdit from "./src/containers/pontos-interesse/edit";
 import HistoricoSessoes from "./src/containers/historico-sessoes";
 import SessaoDetalhes from "./src/containers/sessao-detalhes";
 import DashboardSessao from "./src/containers/session-dashboard";
+import UserProfile from "./src/containers/user";
 
 function App() {
   return (
     <Router>
       <Routes>
-
         {/* Rotas públicas */}
         <Route path="/" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
@@ -29,7 +29,6 @@ function App() {
 
         {/* Área protegida (Dashboard) */}
         <Route path="/dashboard" element={<DashboardLayout />}>
-
           <Route index element={<Dashboard />} />
 
           {/* Pacientes */}
@@ -37,15 +36,24 @@ function App() {
           <Route path="cadastro-paciente" element={<CadastroPaciente />} />
 
           {/* Pontos de interesse */}
-          <Route path="patient/:patientId/points" element={<PontosInteresse />} />
-          <Route path="patient/:patientId/points/create" element={<PointsCreate />} />
-          <Route path="patient/:patientId/points/edit/:id" element={<PointsEdit />} />
+          <Route
+            path="patient/:patientId/points"
+            element={<PontosInteresse />}
+          />
+          <Route
+            path="patient/:patientId/points/create"
+            element={<PointsCreate />}
+          />
+          <Route
+            path="patient/:patientId/points/edit/:id"
+            element={<PointsEdit />}
+          />
 
           {/* Sessões */}
           <Route path="historico-sessoes" element={<HistoricoSessoes />} />
           <Route path="sessao-detalhes/:id" element={<SessaoDetalhes />} />
           <Route path="sessao/:id" element={<DashboardSessao />} />
-
+          <Route path="/dashboard/perfil" element={<UserProfile />} />
         </Route>
       </Routes>
     </Router>
