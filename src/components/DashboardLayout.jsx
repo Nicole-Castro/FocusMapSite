@@ -11,6 +11,8 @@ import {
   ChevronRight,
   User,
 } from "lucide-react";
+import { useEffect } from "react";
+import { getCurrentUser } from "../services/authService";
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -19,10 +21,7 @@ export default function DashboardLayout() {
 
   const navigate = useNavigate();
   const location = useLocation();
-
-  const user = JSON.parse(localStorage.getItem("userData")) || {
-    name: "Usuário",
-  };
+  const [user, setUser] = useState(null);
 
   const menuItems = [
     { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -46,6 +45,19 @@ export default function DashboardLayout() {
       .toUpperCase();
   };
 
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const data = await getCurrentUser();
+        console.log("USER:", data);
+        setUser(data);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    loadUser();
+  }, []);
   return (
     <div className="flex h-screen bg-gray-50">
       {/* SIDEBAR DESKTOP */}
@@ -154,11 +166,11 @@ export default function DashboardLayout() {
               className="flex items-center gap-2"
             >
               <div className="w-10 h-10 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold">
-                {getInitials(user.name)}
+                {getInitials(user?.name || "")}
               </div>
 
               <span className="hidden md:block text-sm font-medium text-gray-700">
-                {user.name}
+                {user?.name || "Usuário"}{" "}
               </span>
             </button>
 

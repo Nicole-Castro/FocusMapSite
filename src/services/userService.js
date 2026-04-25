@@ -15,12 +15,3 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
-export async function getCurrentUser() {
-  try {
-    const res = await API.get("/me");
-    return res.data;
-  } catch (err) {
-    console.error("Erro ao buscar usuário:", err);
-    return null;
-  }
-}

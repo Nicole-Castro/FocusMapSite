@@ -1,17 +1,33 @@
 import React, { useEffect, useState } from "react";
-import { Users, Activity, PlusCircle, Calendar } from "lucide-react";
+import { Users, Activity, PlusCircle, Calendar, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getTotalPatients } from "../../services/getPatient";
 import { getSessionsByProfessional } from "../../services/sessionService";
 
+// ─── Paleta FocusMap ──────────────────────────────────────────────────────────
+const FM = {
+  orange:       "#ff9e3d",
+  orangeDark:   "#f86f26",
+  orangeDeep:   "#b36f2b",
+  orangeLight:  "#ffce85",
+  orangePale:   "#fff4e8",
+  orangeBorder: "#ffbc54",
+  blue:         "#09acde",
+  blueDark:     "#0a7da3",
+  blueLight:    "#e6f7fd",
+  blueBorder:   "#7dd6ef",
+  text:         "#2a1a08",
+  textMid:      "#6f451b",
+  textMuted:    "#aa8661",
+  bg:           "#ffffff",
+  bgSoft:       "#faf7f4",
+  border:       "#ede0d0",
+  borderLight:  "#f5ece0",
+};
+
 export default function Dashboard() {
   const navigate = useNavigate();
-
-  const [stats, setStats] = useState({
-    totalPatients: "-",
-    sessions: "-",
-  });
-
+  const [stats, setStats] = useState({ totalPatients: "-", sessions: "-" });
   const [loading, setLoading] = useState(true);
 
   const userId = localStorage.getItem("user");
@@ -19,17 +35,11 @@ export default function Dashboard() {
   async function loadDashboardData() {
     try {
       setLoading(true);
-
       const patientsRes = await getTotalPatients();
       const totalPatients = patientsRes.total ?? 0;
-
       const sessionsRes = await getSessionsByProfessional(userId);
       const sessions = sessionsRes.data ?? [];
-
-      setStats({
-        totalPatients,
-        sessions: sessions.length,
-      });
+      setStats({ totalPatients, sessions: sessions.length });
     } catch (err) {
       console.error("Erro ao carregar dashboard:", err);
     } finally {
@@ -44,99 +54,193 @@ export default function Dashboard() {
   const cards = [
     {
       icon: Users,
-      label: "Pacientes",
+      label: "Pacientes cadastrados",
       value: stats.totalPatients,
-      color: "from-blue-500 to-blue-600",
+      accent: FM.blue,
+      accentLight: FM.blueLight,
+      accentBorder: FM.blueBorder,
+      accentDark: FM.blueDark,
+      onClick: () => navigate("/dashboard/pacientes"),
     },
     {
       icon: Activity,
-      label: "Sessões",
+      label: "Sessões realizadas",
       value: stats.sessions,
-      color: "from-green-500 to-green-600",
+      accent: FM.orange,
+      accentLight: FM.orangePale,
+      accentBorder: FM.orangeBorder,
+      accentDark: FM.orangeDark,
+      onClick: () => navigate("/dashboard/historico-sessoes"),
     },
   ];
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      {/* HERO */}
-      <div className="bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl p-6 text-white shadow-md">
-        <h1 className="text-2xl md:text-3xl font-bold mb-2">Bem-vindo</h1>
-        <p className="text-primary-100">
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, padding: "4px 0 3rem" }}>
+
+      {/* ── Hero ────────────────────────────────────────────────────────────── */}
+      <div style={{
+        borderRadius: 16,
+        padding: "32px 32px 28px",
+        background: `linear-gradient(135deg, ${FM.orangeDark} 0%, ${FM.orange} 60%, ${FM.orangeLight} 100%)`,
+        position: "relative",
+        overflow: "hidden",
+      }}>
+        {/* círculos decorativos */}
+        <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
+        <div style={{ position: "absolute", bottom: -30, right: 60, width: 110, height: 110, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
+
+        <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.75)", margin: "0 0 6px" }}>
+          FocusMap
+        </p>
+        <h1 style={{ fontSize: 26, fontWeight: 700, color: "#fff", margin: "0 0 6px", lineHeight: 1.2 }}>
+          Bem-vindo de volta
+        </h1>
+        <p style={{ fontSize: 14, color: "rgba(255,255,255,0.82)", margin: "0 0 24px" }}>
           Acompanhe seus pacientes e sessões em tempo real
         </p>
 
-        {/* AÇÕES RÁPIDAS */}
-        <div className="flex flex-wrap gap-3 mt-6">
+        {/* Ações rápidas */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
           <button
             onClick={() => navigate("/dashboard/pacientes")}
-            className="flex items-center gap-2 px-4 py-2 bg-white text-primary-600 font-medium rounded-lg hover:bg-gray-100 transition"
+            style={{
+              display: "flex", alignItems: "center", gap: 7,
+              background: "#fff",
+              border: "none", borderRadius: 8,
+              padding: "9px 16px", fontSize: 13, fontWeight: 600,
+              color: FM.orangeDark, cursor: "pointer",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+            }}
           >
-            <Users size={16} />
-            Ver Pacientes
+            <Users size={14} /> Ver Pacientes
           </button>
-
           <button
             onClick={() => navigate("/dashboard/historico-sessoes")}
-            className="flex items-center gap-2 px-4 py-2 bg-white text-primary-600 font-medium rounded-lg hover:bg-gray-100 transition"
+            style={{
+              display: "flex", alignItems: "center", gap: 7,
+              background: "rgba(255,255,255,0.18)",
+              border: "1px solid rgba(255,255,255,0.35)",
+              borderRadius: 8, padding: "9px 16px",
+              fontSize: 13, fontWeight: 600,
+              color: "#fff", cursor: "pointer",
+            }}
           >
-            <Calendar size={16} />
-            Sessões
+            <Calendar size={14} /> Sessões
           </button>
         </div>
       </div>
 
-      {/* CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {cards.map((stat, index) => (
-          <div
-            key={index}
-            className="bg-white rounded-2xl shadow-sm hover:shadow-md transition p-6 border group"
+      {/* ── Stat cards ──────────────────────────────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
+        {cards.map((card, i) => (
+          <button
+            key={i}
+            onClick={card.onClick}
+            style={{
+              background: FM.bg,
+              border: `1px solid ${FM.border}`,
+              borderRadius: 14,
+              padding: "22px 24px",
+              textAlign: "left",
+              cursor: "pointer",
+              display: "flex",
+              flexDirection: "column",
+              gap: 16,
+              transition: "border-color 0.15s, box-shadow 0.15s",
+              position: "relative",
+              overflow: "hidden",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = card.accentBorder;
+              e.currentTarget.style.boxShadow = `0 4px 16px ${card.accentLight}`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = FM.border;
+              e.currentTarget.style.boxShadow = "none";
+            }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <div
-                className={`bg-gradient-to-br ${stat.color} p-3 rounded-xl shadow`}
-              >
-                <stat.icon className="text-white" size={22} />
-              </div>
+            {/* faixa lateral colorida */}
+            <div style={{
+              position: "absolute", left: 0, top: 0, bottom: 0, width: 4,
+              background: `linear-gradient(180deg, ${card.accent}, ${card.accentDark})`,
+              borderRadius: "14px 0 0 14px",
+            }} />
 
-              {/* efeito hover */}
-              <span className="text-xs text-gray-400 group-hover:text-primary-500 transition">
-                Ver detalhes →
-              </span>
+            {/* Ícone */}
+            <div style={{
+              width: 44, height: 44, borderRadius: 10,
+              background: card.accentLight,
+              border: `1px solid ${card.accentBorder}`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <card.icon size={20} style={{ color: card.accentDark }} />
             </div>
 
-            <p className="text-gray-500 text-sm">{stat.label}</p>
-
-            {loading ? (
-              <div className="h-8 w-16 bg-gray-200 animate-pulse rounded mt-2"></div>
-            ) : (
-              <p className="text-3xl font-bold text-gray-800 mt-1">
-                {stat.value}
+            {/* Valor + label */}
+            <div>
+              <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: FM.textMuted, margin: "0 0 4px" }}>
+                {card.label}
               </p>
-            )}
-          </div>
+              {loading ? (
+                <div style={{ height: 36, width: 64, background: FM.borderLight, borderRadius: 6, animation: "pulse 1.4s ease-in-out infinite" }} />
+              ) : (
+                <p style={{ fontSize: 34, fontWeight: 700, color: FM.text, margin: 0, lineHeight: 1 }}>
+                  {card.value}
+                </p>
+              )}
+            </div>
+
+            {/* Link */}
+            <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 500, color: card.accentDark }}>
+              Ver detalhes <ArrowRight size={12} />
+            </div>
+          </button>
         ))}
       </div>
 
-      {/* AÇÃO EXTRA */}
-      <div className="bg-white rounded-2xl border shadow-sm p-6 flex items-center justify-between">
+      {/* ── Ação extra ──────────────────────────────────────────────────────── */}
+      <div style={{
+        background: FM.bg,
+        border: `1px solid ${FM.border}`,
+        borderRadius: 14,
+        padding: "22px 24px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 16,
+        flexWrap: "wrap",
+      }}>
         <div>
-          <h3 className="font-semibold text-gray-800">
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: FM.text, margin: "0 0 4px" }}>
             Adicionar novo paciente
           </h3>
-          <p className="text-sm text-gray-500">
+          <p style={{ fontSize: 13, color: FM.textMuted, margin: 0 }}>
             Cadastre rapidamente um novo paciente no sistema
           </p>
         </div>
 
         <button
           onClick={() => navigate("/dashboard/cadastro-paciente")}
-          className="flex items-center gap-2 px-5 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition shadow"
+          style={{
+            display: "flex", alignItems: "center", gap: 8,
+            background: `linear-gradient(135deg, ${FM.orange}, ${FM.orangeDark})`,
+            border: "none", borderRadius: 8,
+            padding: "10px 20px", fontSize: 13, fontWeight: 600,
+            color: "#fff", cursor: "pointer",
+            boxShadow: `0 2px 10px ${FM.orangeLight}`,
+            whiteSpace: "nowrap",
+          }}
         >
-          <PlusCircle size={18} />
-          Novo Paciente
+          <PlusCircle size={16} /> Novo Paciente
         </button>
       </div>
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+      `}</style>
     </div>
   );
 }

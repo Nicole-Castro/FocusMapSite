@@ -1,15 +1,49 @@
 import { useEffect, useState } from "react";
 import {
-  RefreshCw,
-  Search,
-  Trash2,
-  ChevronLeft,
-  ChevronRight,
-  MapPin,
-  Users,
+  RefreshCw, Search, Trash2,
+  ChevronLeft, ChevronRight, MapPin, Users, PlusCircle,
 } from "lucide-react";
 import { getPatients } from "../../services/getPatient";
 import { useNavigate } from "react-router-dom";
+
+// ─── Paleta FocusMap ──────────────────────────────────────────────────────────
+const FM = {
+  orange:       "#ff9e3d",
+  orangeDark:   "#f86f26",
+  orangeDeep:   "#b36f2b",
+  orangeLight:  "#ffce85",
+  orangePale:   "#fff4e8",
+  orangeBorder: "#ffbc54",
+  blue:         "#09acde",
+  blueDark:     "#0a7da3",
+  blueLight:    "#e6f7fd",
+  blueBorder:   "#7dd6ef",
+  red:          "#ff663d",
+  redLight:     "#fff0ed",
+  redBorder:    "#ffb5a3",
+  text:         "#2a1a08",
+  textMid:      "#6f451b",
+  textMuted:    "#aa8661",
+  bg:           "#ffffff",
+  bgSoft:       "#faf7f4",
+  border:       "#ede0d0",
+  borderLight:  "#f5ece0",
+};
+
+function PatientAvatar({ name }) {
+  const initial = name?.trim().charAt(0)?.toUpperCase() || "P";
+  return (
+    <div style={{
+      width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
+      background: `linear-gradient(135deg, ${FM.orange}, ${FM.orangeDark})`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: 15, fontWeight: 700, color: "#fff",
+      boxShadow: `0 0 0 2px ${FM.orangePale}`,
+    }}>
+      {initial}
+    </div>
+  );
+}
 
 export default function PacientesList() {
   const [patients, setPatients] = useState([]);
@@ -17,25 +51,17 @@ export default function PacientesList() {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchFocused, setSearchFocused] = useState(false);
 
   const itemsPerPage = 8;
   const navigate = useNavigate();
-
-  const handlePointsOfInterest = (patient) => {
-    navigate(`/dashboard/patient/${patient.id}/points`);
-  };
 
   async function loadPatients() {
     try {
       setLoading(true);
       setError("");
-
       const res = await getPatients();
-      if (!res.success) {
-        setError(res.message || "Erro ao carregar pacientes");
-        return;
-      }
-
+      if (!res.success) { setError(res.message || "Erro ao carregar pacientes"); return; }
       setPatients(res.data ?? []);
     } catch {
       setError("Erro ao conectar com o servidor");
@@ -44,155 +70,202 @@ export default function PacientesList() {
     }
   }
 
-  useEffect(() => {
-    loadPatients();
-  }, []);
+  useEffect(() => { loadPatients(); }, []);
 
-  const filteredPatients = patients.filter(
-    (p) =>
-      p?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p?.email?.toLowerCase().includes(searchTerm.toLowerCase()),
+  const filteredPatients = patients.filter((p) =>
+    p?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p?.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalPages = Math.ceil(filteredPatients.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentPatients = filteredPatients.slice(
-    startIndex,
-    startIndex + itemsPerPage,
-  );
+  const currentPatients = filteredPatients.slice(startIndex, startIndex + itemsPerPage);
 
   const handleDelete = (patient) => {
-    if (confirm(`Excluir ${patient.name}?`)) {
-      alert("Implementar delete real aqui");
-    }
+    if (confirm(`Excluir ${patient.name}?`)) alert("Implementar delete real aqui");
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* HEADER */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+    <div style={{ maxWidth: 960, margin: "0 auto", padding: "4px 0 3rem", display: "flex", flexDirection: "column", gap: 16 }}>
+
+      {/* ── Header ────────────────────────────────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <Users size={22} className="text-primary-500" />
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: FM.text, margin: "0 0 3px", display: "flex", alignItems: "center", gap: 8 }}>
+            <Users size={20} style={{ color: FM.orange }} />
             Pacientes
           </h1>
-          <p className="text-sm text-gray-500">
+          <p style={{ fontSize: 13, color: FM.textMuted, margin: 0 }}>
             {filteredPatients.length} paciente(s) encontrado(s)
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* CTA PRINCIPAL */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button
             onClick={() => navigate("/dashboard/cadastro-paciente")}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-semibold shadow-md hover:scale-105 hover:shadow-lg transition"
+            style={{
+              display: "flex", alignItems: "center", gap: 7,
+              background: `linear-gradient(135deg, ${FM.orange}, ${FM.orangeDark})`,
+              border: "none", borderRadius: 8, padding: "9px 16px",
+              fontSize: 13, fontWeight: 600, color: "#fff", cursor: "pointer",
+              boxShadow: `0 2px 8px ${FM.orangeLight}`,
+            }}
           >
-            ➕ Novo Paciente
+            <PlusCircle size={15} /> Novo Paciente
           </button>
 
-          {/* REFRESH MENOR */}
           <button
             onClick={loadPatients}
-            className="p-2.5 border rounded-lg hover:bg-gray-100 transition"
             title="Atualizar lista"
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center",
+              width: 38, height: 38,
+              background: FM.bg, border: `1px solid ${FM.border}`,
+              borderRadius: 8, cursor: "pointer", color: FM.textMuted,
+            }}
           >
-            <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+            <RefreshCw size={16} style={{ animation: loading ? "spin 0.8s linear infinite" : "none" }} />
           </button>
         </div>
       </div>
 
-      {/* SEARCH */}
-      <div className="bg-white border rounded-xl p-4 shadow-sm">
-        <div className="relative">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            size={18}
-          />
-          <input
-            type="text"
-            placeholder="Buscar paciente..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full pl-10 pr-4 py-3 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-primary-400 outline-none transition"
-          />
-        </div>
+      {/* ── Search ────────────────────────────────────────────────────────── */}
+      <div style={{
+        background: FM.bg, border: `1px solid ${searchFocused ? FM.orange : FM.border}`,
+        borderRadius: 10, padding: "10px 14px",
+        display: "flex", alignItems: "center", gap: 10,
+        boxShadow: searchFocused ? `0 0 0 3px ${FM.orangePale}` : "none",
+        transition: "border-color 0.15s, box-shadow 0.15s",
+      }}>
+        <Search size={16} style={{ color: searchFocused ? FM.orange : FM.textMuted, flexShrink: 0 }} />
+        <input
+          type="text"
+          placeholder="Buscar por nome ou e-mail..."
+          value={searchTerm}
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => setSearchFocused(false)}
+          onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+          style={{
+            flex: 1, border: "none", outline: "none", fontSize: 14,
+            background: "transparent", color: FM.text,
+          }}
+        />
+        {searchTerm && (
+          <button
+            onClick={() => { setSearchTerm(""); setCurrentPage(1); }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: FM.textMuted, fontSize: 16, lineHeight: 1, padding: 0 }}
+          >
+            ×
+          </button>
+        )}
       </div>
 
-      {/* LOADING / ERROR */}
+      {/* ── Loading ───────────────────────────────────────────────────────── */}
       {loading && (
-        <div className="text-center py-16 text-gray-500">
-          <RefreshCw className="animate-spin mx-auto mb-4" size={36} />
+        <div style={{ textAlign: "center", padding: "64px 0", color: FM.textMuted, fontSize: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+          <RefreshCw size={32} style={{ color: FM.orange, animation: "spin 0.8s linear infinite" }} />
           Carregando pacientes...
         </div>
       )}
 
+      {/* ── Error ─────────────────────────────────────────────────────────── */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
+        <div style={{ background: FM.redLight, border: `1px solid ${FM.redBorder}`, borderRadius: 8, padding: "12px 16px", fontSize: 13, color: FM.red }}>
           {error}
         </div>
       )}
 
-      {/* EMPTY */}
-      {!loading && filteredPatients.length === 0 && (
-        <div className="text-center py-16 text-gray-500">
-          Nenhum paciente encontrado
+      {/* ── Empty ─────────────────────────────────────────────────────────── */}
+      {!loading && !error && filteredPatients.length === 0 && (
+        <div style={{ textAlign: "center", padding: "64px 0", color: FM.textMuted }}>
+          <Users size={36} style={{ color: FM.orangeLight, marginBottom: 12 }} />
+          <p style={{ fontSize: 15, fontWeight: 600, color: FM.textMid, margin: "0 0 4px" }}>Nenhum paciente encontrado</p>
+          <p style={{ fontSize: 13, margin: 0 }}>
+            {searchTerm ? "Tente outro termo de busca" : "Adicione o primeiro paciente"}
+          </p>
         </div>
       )}
 
-      {/* LISTA */}
+      {/* ── Tabela ────────────────────────────────────────────────────────── */}
       {!loading && currentPatients.length > 0 && (
-        <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
-          {/* HEADER TABELA */}
-          <div className="grid grid-cols-3 px-6 py-3 bg-gray-50 text-xs font-semibold text-gray-600 uppercase">
-            <span>Paciente</span>
-            <span>Email</span>
-            <span className="text-center">Ações</span>
+        <div style={{ background: FM.bg, border: `1px solid ${FM.border}`, borderRadius: 12, overflow: "hidden" }}>
+
+          {/* Cabeçalho */}
+          <div style={{
+            display: "grid", gridTemplateColumns: "2fr 2fr 1fr",
+            padding: "10px 20px",
+            background: FM.bgSoft,
+            borderBottom: `1px solid ${FM.borderLight}`,
+          }}>
+            {["Paciente", "E-mail", "Ações"].map((col, i) => (
+              <span key={col} style={{
+                fontSize: 11, fontWeight: 600, letterSpacing: "0.09em",
+                textTransform: "uppercase", color: FM.textMuted,
+                textAlign: i === 2 ? "center" : "left",
+              }}>
+                {col}
+              </span>
+            ))}
           </div>
 
-          {/* LINHAS */}
-          {currentPatients.map((patient) => (
+          {/* Linhas */}
+          {currentPatients.map((patient, idx) => (
             <div
               key={patient.id}
-              className="grid grid-cols-3 px-6 py-4 items-center border-t hover:bg-gray-50 transition group"
+              style={{
+                display: "grid", gridTemplateColumns: "2fr 2fr 1fr",
+                padding: "13px 20px", alignItems: "center",
+                borderTop: idx === 0 ? "none" : `1px solid ${FM.borderLight}`,
+                background: FM.bg,
+                transition: "background 0.12s",
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = FM.orangePale}
+              onMouseLeave={(e) => e.currentTarget.style.background = FM.bg}
             >
-              {/* PACIENTE */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white flex items-center justify-center font-semibold">
-                  {patient.name?.charAt(0) || "P"}
-                </div>
-
+              {/* Paciente */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <PatientAvatar name={patient.name} />
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p style={{ fontSize: 13, fontWeight: 600, color: FM.text, margin: "0 0 1px" }}>
                     {patient.name}
                   </p>
-                  <p className="text-xs text-gray-400">
-                    ID: {patient.id?.slice(0, 6)}
+                  <p style={{ fontSize: 11, color: FM.textMuted, margin: 0, fontFamily: "monospace" }}>
+                    #{patient.id?.slice(0, 6)}
                   </p>
                 </div>
               </div>
 
-              {/* EMAIL */}
-              <div className="text-sm text-gray-600">{patient.email}</div>
+              {/* Email */}
+              <p style={{ fontSize: 13, color: FM.textMid, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", paddingRight: 12 }}>
+                {patient.email}
+              </p>
 
-              {/* AÇÕES */}
-              <div className="flex justify-center gap-2">
+              {/* Ações */}
+              <div style={{ display: "flex", justifyContent: "center", gap: 6 }}>
                 <button
-                  onClick={() => handlePointsOfInterest(patient)}
-                  className="flex items-center gap-1 px-3 py-1.5 text-xs bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition"
+                  onClick={() => navigate(`/dashboard/patient/${patient.id}/points`)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 5,
+                    padding: "5px 10px", fontSize: 12, fontWeight: 600,
+                    background: FM.blueLight, color: FM.blueDark,
+                    border: `1px solid ${FM.blueBorder}`,
+                    borderRadius: 6, cursor: "pointer",
+                  }}
                 >
-                  <MapPin size={14} />
-                  POIs
+                  <MapPin size={12} /> POIs
                 </button>
 
                 <button
                   onClick={() => handleDelete(patient)}
-                  className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"
+                  style={{
+                    display: "flex", alignItems: "center", gap: 5,
+                    padding: "5px 10px", fontSize: 12, fontWeight: 600,
+                    background: FM.redLight, color: FM.red,
+                    border: `1px solid ${FM.redBorder}`,
+                    borderRadius: 6, cursor: "pointer",
+                  }}
                 >
-                  <Trash2 size={14} />
-                  Excluir
+                  <Trash2 size={12} /> Excluir
                 </button>
               </div>
             </div>
@@ -200,32 +273,41 @@ export default function PacientesList() {
         </div>
       )}
 
-      {/* PAGINAÇÃO */}
+      {/* ── Paginação ─────────────────────────────────────────────────────── */}
       {totalPages > 1 && (
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-500">
-            Página {currentPage} de {totalPages}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 12, color: FM.textMuted }}>
+            Página {currentPage} de {totalPages} · {filteredPatients.length} pacientes
           </span>
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-              disabled={currentPage === 1}
-              className="p-2 border rounded-lg hover:bg-gray-100 disabled:opacity-40"
-            >
-              <ChevronLeft size={16} />
-            </button>
-
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="p-2 border rounded-lg hover:bg-gray-100 disabled:opacity-40"
-            >
-              <ChevronRight size={16} />
-            </button>
+          <div style={{ display: "flex", gap: 6 }}>
+            {[
+              { icon: ChevronLeft, action: () => setCurrentPage((p) => Math.max(p - 1, 1)), disabled: currentPage === 1 },
+              { icon: ChevronRight, action: () => setCurrentPage((p) => Math.min(p + 1, totalPages)), disabled: currentPage === totalPages },
+            ].map(({ icon: Icon, action, disabled }, i) => (
+              <button
+                key={i}
+                onClick={action}
+                disabled={disabled}
+                style={{
+                  width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
+                  background: disabled ? FM.bgSoft : FM.bg,
+                  border: `1px solid ${disabled ? FM.borderLight : FM.border}`,
+                  borderRadius: 6, cursor: disabled ? "not-allowed" : "pointer",
+                  color: disabled ? FM.textMuted : FM.orangeDark,
+                  opacity: disabled ? 0.5 : 1,
+                }}
+              >
+                <Icon size={15} />
+              </button>
+            ))}
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        input::placeholder { color: ${FM.textMuted}; opacity: 0.7; }
+      `}</style>
     </div>
   );
 }
