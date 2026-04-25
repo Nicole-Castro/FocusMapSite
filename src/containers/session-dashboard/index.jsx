@@ -9,12 +9,17 @@ import {
   User,
   Activity,
   Zap,
-  Wind,
   ChevronDown,
   ChevronUp,
   PieChart as PieIcon,
   BarChart3,
   Target,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  AlertTriangle,
+  CheckCircle,
+  RefreshCw,
 } from "lucide-react";
 import {
   LineChart,
@@ -41,44 +46,65 @@ import {
 } from "recharts";
 import { getSessionDashboard } from "../../services/sessionService";
 
-// ─── paleta ──────────────────────────────────────────────────────────────────
-
-const C = {
-  orange: "#f86f26",
-  orangeL: "#ff9e3d",
-  attention: "#3b82f6",
-  meditation: "#10b981",
-  delta: "#8b5cf6",
-  alpha: "#f59e0b",
-  beta: "#ef4444",
-  gamma: "#06b6d4",
-  audio: "#fde68a",
-  audioBorder: "#f59e0b",
-  gray: "#9ca3af",
+// ─── Paleta FocusMap ──────────────────────────────────────────────────────────
+const FM = {
+  orange: "#ff9e3d",
+  orangeDark: "#f86f26",
+  orangeDeep: "#b36f2b",
+  orangeLight: "#ffce85",
+  orangePale: "#fff4e8",
+  orangeBorder: "#ffbc54",
+  blue: "#09acde",
+  blueDark: "#0a7da3",
+  blueLight: "#e6f7fd",
+  blueBorder: "#7dd6ef",
+  purple: "#773dff",
+  purpleLight: "#f0ebff",
+  purpleBorder: "#c4adff",
+  yellow: "#e8bb25",
+  yellowLight: "#fffbe6",
+  yellowBorder: "#f5da7a",
+  red: "#ff663d",
+  redLight: "#fff0ed",
+  redBorder: "#ffb5a3",
+  green: "#3dff55",
+  greenDark: "#1a9e2a",
+  greenLight: "#edfff0",
+  greenBorder: "#a3ffad",
+  // Ondas cerebrais
+  delta: "#773dff",
+  theta: "#09acde",
+  alpha: "#e8bb25",
+  beta: "#ff663d",
+  gamma: "#3dff55",
+  // Base
+  text: "#2a1a08",
+  textMid: "#6f451b",
+  textMuted: "#aa8661",
+  bg: "#ffffff",
+  bgSoft: "#faf7f4",
+  border: "#ede0d0",
+  borderLight: "#f5ece0",
 };
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const pad = (n) => String(n).padStart(2, "0");
 
-function pad(n) {
-  return String(n).padStart(2, "0");
-}
-
-function formatDuration(start, end) {
+const formatDuration = (start, end) => {
   if (!start || !end) return "—";
   const s = Math.round((new Date(end) - new Date(start)) / 1000);
   const m = Math.floor(s / 60);
   const h = Math.floor(m / 60);
-  if (h > 0) return `${h}h ${pad(m % 60)}m`;
-  return `${m}m ${pad(s % 60)}s`;
-}
+  return h > 0 ? `${h}h ${pad(m % 60)}m` : `${m}m ${pad(s % 60)}s`;
+};
 
-function formatTimestamp(t) {
+const formatTimestamp = (t) => {
   if (!t) return "";
   const d = new Date(t);
   return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
+};
 
-function formatDateFull(t) {
+const formatDateFull = (t) => {
   if (!t) return "—";
   return new Date(t).toLocaleString("pt-BR", {
     day: "2-digit",
@@ -87,49 +113,115 @@ function formatDateFull(t) {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
+};
 
-function avg(arr, key) {
+const avg = (arr, key) => {
   const vals = arr.map((d) => Number(d[key])).filter((v) => !isNaN(v));
-  if (!vals.length) return null;
-  return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
-}
-
-function maxVal(arr, key) {
+  return vals.length
+    ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)
+    : null;
+};
+const maxVal = (arr, key) => {
   const vals = arr.map((d) => d[key]).filter((v) => v != null && !isNaN(v));
   return vals.length ? Math.round(Math.max(...vals)) : null;
-}
-
-function minVal(arr, key) {
+};
+const minVal = (arr, key) => {
   const vals = arr.map((d) => d[key]).filter((v) => v != null && !isNaN(v));
   return vals.length ? Math.round(Math.min(...vals)) : null;
-}
+};
 
-function attLabel(v) {
-  if (v == null) return { text: "—", bg: "#f3f4f6", fg: "#6b7280" };
-  if (v >= 75) return { text: "Alto", bg: "#d1fae5", fg: "#065f46" };
-  if (v >= 50) return { text: "Médio", bg: "#fef3c7", fg: "#92400e" };
-  return { text: "Baixo", bg: "#fee2e2", fg: "#991b1b" };
-}
+// Classifica nível de atenção
+const attLabel = (v) => {
+  if (v == null)
+    return { text: "—", bg: FM.bgSoft, border: FM.border, fg: FM.textMuted };
+  if (v >= 75)
+    return {
+      text: "Alto",
+      bg: FM.greenLight,
+      border: FM.greenBorder,
+      fg: FM.greenDark,
+    };
+  if (v >= 50)
+    return {
+      text: "Médio",
+      bg: FM.yellowLight,
+      border: FM.yellowBorder,
+      fg: FM.yellow,
+    };
+  return { text: "Baixo", bg: FM.redLight, border: FM.redBorder, fg: FM.red };
+};
 
-// ─── tooltip customizado ──────────────────────────────────────────────────────
+// Heatmap
+const buildHeatmapData = (eeg, bucketSizeSeconds = 10) => {
+  if (!eeg.length) return [];
+  const start = new Date(eeg[0].timestamp).getTime();
+  const buckets = {};
+  eeg.forEach((e) => {
+    const diffSec = Math.floor(
+      (new Date(e.timestamp).getTime() - start) / 1000,
+    );
+    const bucket = Math.floor(diffSec / bucketSizeSeconds);
+    if (!buckets[bucket])
+      buckets[bucket] = { values: [], time: new Date(e.timestamp).getTime() };
+    buckets[bucket].values.push(e.attention_value);
+  });
+  return Object.keys(buckets).map((k) => {
+    const b = buckets[k];
+    const a = b.values.reduce((s, v) => s + v, 0) / b.values.length;
+    return { time: new Date(b.time).toISOString(), attention: Math.round(a) };
+  });
+};
 
+const heatColor = (v) => {
+  if (v == null) return FM.border;
+  if (v >= 75) return FM.greenDark;
+  if (v >= 50) return FM.yellow;
+  if (v >= 25) return FM.orange;
+  return FM.red;
+};
+
+// Calcula "zonas de foco" — períodos de alta atenção contíguos
+const buildFocusZones = (eeg, threshold = 60, minLen = 3) => {
+  const zones = [];
+  let start = null;
+  eeg.forEach((e, i) => {
+    const high = e.attention_value >= threshold;
+    if (high && start === null) start = i;
+    if (!high && start !== null) {
+      if (i - start >= minLen)
+        zones.push({
+          from: eeg[start].timestamp,
+          to: eeg[i - 1].timestamp,
+          len: i - start,
+        });
+      start = null;
+    }
+  });
+  if (start !== null && eeg.length - start >= minLen)
+    zones.push({
+      from: eeg[start].timestamp,
+      to: eeg[eeg.length - 1].timestamp,
+      len: eeg.length - start,
+    });
+  return zones;
+};
+
+// ─── Tooltip customizado ──────────────────────────────────────────────────────
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
     <div
       style={{
         background: "rgba(255,255,255,0.97)",
-        border: "0.5px solid #e5e7eb",
+        border: `1px solid ${FM.border}`,
         borderRadius: 8,
         padding: "8px 12px",
         fontSize: 12,
-        boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+        boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
         minWidth: 160,
-        zIndex: 100,
       }}
     >
-      <p style={{ color: "#6b7280", marginBottom: 6, fontWeight: 500 }}>
+      <p style={{ color: FM.textMuted, marginBottom: 6, fontWeight: 500 }}>
         {label}
       </p>
       {payload.map((p, i) => (
@@ -151,8 +243,8 @@ function CustomTooltip({ active, payload, label }) {
               flexShrink: 0,
             }}
           />
-          <span style={{ color: "#374151" }}>{p.name}:</span>
-          <span style={{ fontWeight: 600, color: "#111827" }}>
+          <span style={{ color: FM.textMid }}>{p.name}:</span>
+          <span style={{ fontWeight: 700, color: FM.text }}>
             {Math.round(p.value ?? 0)}
           </span>
         </div>
@@ -161,116 +253,33 @@ function CustomTooltip({ active, payload, label }) {
   );
 }
 
-// ─── sub-componentes ─────────────────────────────────────────────────────────
-
-function InfoCard({ icon: Icon, label, value, sub, accent = C.orange }) {
+// ─── Subcomponentes ───────────────────────────────────────────────────────────
+function SectionCard({ children, style = {} }) {
   return (
     <div
       style={{
-        background: "#fff",
-        border: "0.5px solid #e5e7eb",
+        background: FM.bg,
+        border: `1px solid ${FM.border}`,
         borderRadius: 12,
-        padding: "1rem 1.25rem",
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 12,
+        padding: "20px",
+        ...style,
       }}
     >
-      <div
-        style={{
-          width: 38,
-          height: 38,
-          borderRadius: 10,
-          background: accent + "18",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-        }}
-      >
-        <Icon size={18} color={accent} />
-      </div>
-      <div style={{ minWidth: 0 }}>
-        <p
-          style={{
-            margin: 0,
-            fontSize: 11,
-            color: "#9ca3af",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-          }}
-        >
-          {label}
-        </p>
-        <p
-          style={{
-            margin: "3px 0 0",
-            fontSize: 15,
-            fontWeight: 600,
-            color: "#111827",
-          }}
-        >
-          {value ?? "—"}
-        </p>
-        {sub && (
-          <p style={{ margin: "2px 0 0", fontSize: 11, color: "#6b7280" }}>
-            {sub}
-          </p>
-        )}
-      </div>
+      {children}
     </div>
   );
 }
 
-function StatPill({ label, value, color }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 2,
-        padding: "10px 16px",
-        background: color + "12",
-        border: `0.5px solid ${color}40`,
-        borderRadius: 10,
-        minWidth: 80,
-      }}
-    >
-      <span
-        style={{
-          fontSize: 20,
-          fontWeight: 700,
-          color,
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        {value ?? "—"}
-      </span>
-      <span
-        style={{
-          fontSize: 10,
-          color: "#6b7280",
-          textAlign: "center",
-          lineHeight: 1.2,
-        }}
-      >
-        {label}
-      </span>
-    </div>
-  );
-}
-
-function SectionTitle({ children }) {
+function SectionTitle({ children, icon: Icon }) {
   return (
     <h3
       style={{
-        fontSize: 13,
-        fontWeight: 600,
-        color: "#374151",
+        fontSize: 11,
+        fontWeight: 700,
+        color: FM.textMuted,
         textTransform: "uppercase",
-        letterSpacing: "0.06em",
-        margin: "0 0 1rem",
+        letterSpacing: "0.1em",
+        margin: "0 0 16px",
         display: "flex",
         alignItems: "center",
         gap: 8,
@@ -279,77 +288,292 @@ function SectionTitle({ children }) {
       <span
         style={{
           width: 3,
-          height: 16,
-          background: C.orange,
+          height: 14,
+          background: FM.orange,
           borderRadius: 2,
           flexShrink: 0,
         }}
       />
+      {Icon && <Icon size={13} style={{ color: FM.orange }} />}
       {children}
     </h3>
   );
 }
-function buildHeatmapData(eeg, bucketSizeSeconds = 10) {
-  if (!eeg.length) return [];
 
-  const start = new Date(eeg[0].timestamp).getTime();
-
-  const buckets = {};
-
-  eeg.forEach((e) => {
-    const t = new Date(e.timestamp).getTime();
-    const diffSec = Math.floor((t - start) / 1000);
-
-    const bucket = Math.floor(diffSec / bucketSizeSeconds);
-
-    if (!buckets[bucket]) {
-      buckets[bucket] = {
-        values: [],
-        time: t,
-      };
-    }
-
-    buckets[bucket].values.push(e.attention_value);
-  });
-
-  return Object.keys(buckets).map((k) => {
-    const b = buckets[k];
-    const avg = b.values.reduce((a, v) => a + v, 0) / b.values.length;
-
-    return {
-      time: new Date(b.time).toISOString(),
-      attention: Math.round(avg),
-    };
-  });
+function InfoCard({ icon: Icon, label, value, accentColor }) {
+  const c = accentColor || FM.orange;
+  return (
+    <div
+      style={{
+        background: FM.bg,
+        border: `1px solid ${FM.border}`,
+        borderRadius: 12,
+        padding: "14px 16px",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        flex: 1,
+        minWidth: 160,
+      }}
+    >
+      <div
+        style={{
+          width: 38,
+          height: 38,
+          borderRadius: 9,
+          background: c + "18",
+          border: `1px solid ${c}40`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        <Icon size={17} style={{ color: c }} />
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <p
+          style={{
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: FM.textMuted,
+            margin: "0 0 2px",
+          }}
+        >
+          {label}
+        </p>
+        <p
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: FM.text,
+            margin: 0,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {value ?? "—"}
+        </p>
+      </div>
+    </div>
+  );
 }
-function getHeatColor(value) {
-  if (value == null) return "#e5e7eb";
 
-  if (value >= 75) return "#16a34a"; // verde
-  if (value >= 50) return "#eab308"; // amarelo
-  if (value >= 25) return "#f97316"; // laranja
-  return "#dc2626"; // vermelho
+function StatPill({ label, value, color, icon: Icon }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 3,
+        padding: "12px 16px",
+        background: color + "15",
+        border: `1px solid ${color}40`,
+        borderRadius: 10,
+        minWidth: 80,
+        flex: 1,
+      }}
+    >
+      {Icon && <Icon size={14} style={{ color }} />}
+      <span
+        style={{
+          fontSize: 22,
+          fontWeight: 700,
+          color,
+          fontVariantNumeric: "tabular-nums",
+          lineHeight: 1,
+        }}
+      >
+        {value ?? "—"}
+      </span>
+      <span
+        style={{
+          fontSize: 10,
+          color: FM.textMuted,
+          textAlign: "center",
+          lineHeight: 1.3,
+        }}
+      >
+        {label}
+      </span>
+    </div>
+  );
 }
 
+// Gauge circular de atenção
+function AttentionGauge({ value }) {
+  if (value == null) return null;
+  const pct = Math.min(Math.max(value, 0), 100);
+  const r = 52;
+  const circ = 2 * Math.PI * r;
+  const dash = (pct / 100) * circ * 0.75; // 270° sweep
+  const ac = attLabel(value);
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 6,
+      }}
+    >
+      <svg width={130} height={110} viewBox="0 0 130 110">
+        <defs>
+          <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor={FM.red} />
+            <stop offset="50%" stopColor={FM.yellow} />
+            <stop offset="100%" stopColor={FM.greenDark} />
+          </linearGradient>
+        </defs>
+        {/* trilha */}
+        <circle
+          cx={65}
+          cy={70}
+          r={r}
+          fill="none"
+          stroke={FM.borderLight}
+          strokeWidth={12}
+          strokeDasharray={`${circ * 0.75} ${circ * 0.25}`}
+          strokeLinecap="round"
+          style={{ transform: "rotate(135deg)", transformOrigin: "65px 70px" }}
+        />
+        {/* progresso */}
+        <circle
+          cx={65}
+          cy={70}
+          r={r}
+          fill="none"
+          stroke="url(#gaugeGrad)"
+          strokeWidth={12}
+          strokeDasharray={`${dash} ${circ}`}
+          strokeLinecap="round"
+          style={{
+            transform: "rotate(135deg)",
+            transformOrigin: "65px 70px",
+            transition: "stroke-dasharray 0.5s ease",
+          }}
+        />
+        <text
+          x={65}
+          y={68}
+          textAnchor="middle"
+          fontSize={22}
+          fontWeight={700}
+          fill={ac.fg}
+        >
+          {value}
+        </text>
+        <text
+          x={65}
+          y={84}
+          textAnchor="middle"
+          fontSize={11}
+          fill={FM.textMuted}
+        >
+          de 100
+        </text>
+      </svg>
+      <span
+        style={{
+          fontSize: 13,
+          fontWeight: 700,
+          color: ac.fg,
+          background: ac.bg,
+          border: `1px solid ${ac.border}`,
+          borderRadius: 99,
+          padding: "3px 12px",
+        }}
+      >
+        {ac.text}
+      </span>
+    </div>
+  );
+}
+
+// Heatmap timeline
+function HeatmapTimeline({ data }) {
+  if (!data.length)
+    return (
+      <p style={{ color: FM.textMuted, fontSize: 13, textAlign: "center" }}>
+        Sem dados
+      </p>
+    );
+  return (
+    <div>
+      <div
+        style={{ display: "flex", gap: 2, overflowX: "auto", paddingBottom: 4 }}
+      >
+        {data.map((d, i) => (
+          <div
+            key={i}
+            title={`${formatTimestamp(d.time)} · Atenção: ${d.attention}%`}
+            style={{
+              width: 10,
+              minWidth: 10,
+              height: 44,
+              background: heatColor(d.attention),
+              borderRadius: 3,
+              flexShrink: 0,
+              cursor: "help",
+            }}
+          />
+        ))}
+      </div>
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          marginTop: 8,
+          fontSize: 11,
+          color: FM.textMuted,
+          flexWrap: "wrap",
+        }}
+      >
+        {[
+          { c: FM.red, l: "< 25 — Baixo" },
+          { c: FM.orange, l: "25-49 — Médio-baixo" },
+          { c: FM.yellow, l: "50-74 — Médio" },
+          { c: FM.greenDark, l: "≥ 75 — Alto" },
+        ].map(({ c, l }) => (
+          <span
+            key={l}
+            style={{ display: "flex", alignItems: "center", gap: 4 }}
+          >
+            <span
+              style={{ width: 10, height: 10, background: c, borderRadius: 2 }}
+            />{" "}
+            {l}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// TopicRow expansível
 function TopicRow({ topic, index, eeg, isExpanded, onToggle }) {
-  const start = new Date(topic.startOfAudio);
-  const end = new Date(topic.endOfAudio);
-
+  const start = new Date(topic.startOfAudio).getTime();
+  const end = new Date(topic.endOfAudio).getTime();
   const slice = eeg.filter((e) => {
     const t = new Date(e.timestamp).getTime();
     return t >= start && t <= end;
   });
   const avgAtt = avg(slice, "attention_value");
-  const { text: attText, bg: attBg, fg: attFg } = attLabel(avgAtt);
+  const avgMed = avg(slice, "meditation_value");
+  const ac = attLabel(avgAtt);
 
   return (
     <div
       style={{
-        border: "0.5px solid #e5e7eb",
+        border: `1px solid ${isExpanded ? FM.orangeBorder : FM.border}`,
         borderRadius: 10,
         overflow: "hidden",
-        background: "#fff",
-        transition: "box-shadow .15s",
+        background: FM.bg,
+        transition: "border-color 0.15s",
       }}
     >
       <button
@@ -358,9 +582,9 @@ function TopicRow({ topic, index, eeg, isExpanded, onToggle }) {
           width: "100%",
           display: "flex",
           alignItems: "center",
-          gap: 12,
+          gap: 10,
           padding: "12px 16px",
-          background: "none",
+          background: isExpanded ? FM.orangePale : "none",
           border: "none",
           cursor: "pointer",
           textAlign: "left",
@@ -372,25 +596,24 @@ function TopicRow({ topic, index, eeg, isExpanded, onToggle }) {
             height: 24,
             borderRadius: "50%",
             flexShrink: 0,
-            background: C.orange + "18",
+            background: FM.orangePale,
+            border: `1px solid ${FM.orangeBorder}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             fontSize: 11,
             fontWeight: 700,
-            color: C.orange,
+            color: FM.orangeDark,
           }}
         >
           {index + 1}
         </span>
-
-        <Mic size={14} color="#9ca3af" style={{ flexShrink: 0 }} />
-
+        <Mic size={13} style={{ color: FM.textMuted, flexShrink: 0 }} />
         <span
           style={{
             flex: 1,
             fontSize: 13,
-            color: "#1f2937",
+            color: FM.text,
             fontWeight: 500,
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -399,96 +622,129 @@ function TopicRow({ topic, index, eeg, isExpanded, onToggle }) {
         >
           {topic.description}
         </span>
-
         {avgAtt != null && (
           <span
             style={{
               fontSize: 11,
               padding: "2px 8px",
               borderRadius: 6,
-              background: attBg,
-              color: attFg,
-              fontWeight: 600,
+              background: ac.bg,
+              color: ac.fg,
+              fontWeight: 700,
+              border: `1px solid ${ac.border}`,
               flexShrink: 0,
             }}
           >
-            {avgAtt}% · {attText}
+            Atenção: {avgAtt}
           </span>
         )}
-
-        <span style={{ fontSize: 11, color: "#9ca3af", flexShrink: 0 }}>
+        <span style={{ fontSize: 11, color: FM.textMuted, flexShrink: 0 }}>
           {formatTimestamp(topic.startOfAudio)} →{" "}
           {formatTimestamp(topic.endOfAudio)}
         </span>
-
         {isExpanded ? (
-          <ChevronUp size={14} color="#9ca3af" />
+          <ChevronUp size={14} style={{ color: FM.textMuted }} />
         ) : (
-          <ChevronDown size={14} color="#9ca3af" />
+          <ChevronDown size={14} style={{ color: FM.textMuted }} />
         )}
       </button>
 
-      {isExpanded && slice.length > 1 && (
+      {isExpanded && (
         <div
-          style={{ padding: "0 16px 16px", borderTop: "0.5px solid #f3f4f6" }}
+          style={{
+            padding: "0 16px 16px",
+            borderTop: `1px solid ${FM.borderLight}`,
+          }}
         >
-          <p style={{ fontSize: 11, color: "#9ca3af", margin: "10px 0 8px" }}>
-            Atenção durante este tópico ({slice.length} pontos)
-          </p>
-          <div style={{ height: 80 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={slice}
-                margin={{ top: 4, right: 4, left: -30, bottom: 0 }}
+          {slice.length > 1 ? (
+            <>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  marginTop: 10,
+                  marginBottom: 10,
+                  flexWrap: "wrap",
+                }}
               >
-                <defs>
-                  <linearGradient
-                    id={`grad-${index}`}
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
+                <span style={{ fontSize: 11, color: FM.textMuted }}>
+                  {slice.length} pontos EEG
+                </span>
+                {avgMed != null && (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: FM.purple,
+                      background: FM.purpleLight,
+                      border: `1px solid ${FM.purpleBorder}`,
+                      borderRadius: 99,
+                      padding: "1px 8px",
+                    }}
                   >
-                    <stop
-                      offset="5%"
-                      stopColor={C.attention}
-                      stopOpacity={0.25}
+                    Meditação média: {avgMed}
+                  </span>
+                )}
+              </div>
+              <div style={{ height: 90 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={slice}
+                    margin={{ top: 4, right: 4, left: -30, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient
+                        id={`grad-${index}`}
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor={FM.blue}
+                          stopOpacity={0.25}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor={FM.blue}
+                          stopOpacity={0}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="timestamp" hide />
+                    <YAxis domain={[0, 100]} hide />
+                    <Tooltip content={<CustomTooltip />} />
+                    <ReferenceLine
+                      y={50}
+                      stroke={FM.borderLight}
+                      strokeDasharray="3 3"
                     />
-                    <stop
-                      offset="95%"
-                      stopColor={C.attention}
-                      stopOpacity={0}
+                    <Area
+                      type="monotone"
+                      dataKey="attention_value"
+                      stroke={FM.blue}
+                      strokeWidth={2}
+                      fill={`url(#grad-${index})`}
+                      dot={false}
+                      name="Atenção"
                     />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="timestamp" hide />
-                <YAxis domain={[0, 100]} hide />
-                <Tooltip content={<CustomTooltip />} />
-                <Area
-                  type="monotone"
-                  dataKey="attention_value"
-                  stroke={C.attention}
-                  strokeWidth={2}
-                  fill={`url(#grad-${index})`}
-                  dot={false}
-                  name="Atenção"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </>
+          ) : (
+            <p style={{ fontSize: 12, color: FM.textMuted, marginTop: 10 }}>
+              Dados insuficientes para este intervalo.
+            </p>
+          )}
         </div>
-      )}
-      {isExpanded && slice.length <= 1 && (
-        <p style={{ padding: "8px 16px 14px", fontSize: 12, color: "#9ca3af" }}>
-          Dados insuficientes para este intervalo.
-        </p>
       )}
     </div>
   );
 }
 
-// ─── main ─────────────────────────────────────────────────────────────────────
-
+// ─── Componente principal ─────────────────────────────────────────────────────
 export default function DashboardSessao() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -498,38 +754,27 @@ export default function DashboardSessao() {
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null);
-
   const [visible, setVisible] = useState({
     attention_value: true,
     meditation_value: true,
-    delta_power: true,
+    delta_power: false,
     low_alpha_power: true,
-    high_alpha_power: true,
-    low_beta_power: true,
-    high_beta_power: true,
+    high_beta_power: false,
   });
 
   const toggleLine = (key) => setVisible((v) => ({ ...v, [key]: !v[key] }));
+
   useEffect(() => {
     async function load() {
       try {
         const res = await getSessionDashboard(id);
-
-        console.log("RES COMPLETO:", res);
-
-        if (!res) {
-          setLoading(false);
-          return;
-        }
-
+        if (!res) return;
         setSession(res.session);
 
         const eegNorm = (res.eeg || []).map((e) => ({
           timestamp: new Date(e.timestamp ?? e.Timestamp).toISOString(),
-
           attention_value: Number(e.attentionValue ?? e.AttentionValue),
           meditation_value: Number(e.meditationValue ?? e.MeditationValue),
-
           delta_power: Number(e.deltaPower ?? e.DeltaPower),
           low_alpha_power: Number(e.lowAlphaPower ?? e.LowAlphaPower),
           high_alpha_power: Number(e.highAlphaPower ?? e.HighAlphaPower),
@@ -538,11 +783,7 @@ export default function DashboardSessao() {
           low_gamma_power: Number(e.lowGammaPower ?? e.LowGammaPower),
         }));
 
-        function ensureUTC(dateStr) {
-          if (!dateStr) return null;
-          return dateStr.endsWith("Z") ? dateStr : dateStr + "Z";
-        }
-
+        const ensureUTC = (s) => (s && !s.endsWith("Z") ? s + "Z" : s);
         const topicsNorm = (res.audioTopics || []).map((t) => ({
           id: t.id ?? t.Id,
           description: t.description ?? t.Description,
@@ -562,11 +803,10 @@ export default function DashboardSessao() {
         setLoading(false);
       }
     }
-
-    load(); // 🔥 ESSENCIAL
+    load();
   }, [id]);
-  // ── estatísticas e transformações de dados ──────────────────────────────────
 
+  // ── Dados computados ───────────────────────────────────────────────────────
   const stats = useMemo(
     () => ({
       avgAtt: avg(eeg, "attention_value"),
@@ -577,71 +817,133 @@ export default function DashboardSessao() {
     }),
     [eeg],
   );
-  const heatmapData = useMemo(() => {
-    return buildHeatmapData(eeg, 10); // blocos de 10s
+
+  const heatmapData = useMemo(() => buildHeatmapData(eeg, 10), [eeg]);
+
+  const focusZones = useMemo(() => buildFocusZones(eeg, 60, 3), [eeg]);
+
+  // Tendência: compara primeira e segunda metade da sessão
+  const trend = useMemo(() => {
+    if (eeg.length < 10) return null;
+    const half = Math.floor(eeg.length / 2);
+    const first = avg(eeg.slice(0, half), "attention_value");
+    const second = avg(eeg.slice(half), "attention_value");
+    if (first == null || second == null) return null;
+    const diff = second - first;
+    return { first, second, diff };
   }, [eeg]);
 
-  // Dados para o Gráfico Radar (Perfil Cerebral)
-  const radarData = useMemo(() => {
-    if (!eeg.length) return [];
-    return [
-      { subject: "Delta", A: avg(eeg, "delta_power"), fullMark: 100 },
-      { subject: "Alpha Low", A: avg(eeg, "low_alpha_power"), fullMark: 100 },
-      { subject: "Alpha High", A: avg(eeg, "high_alpha_power"), fullMark: 100 },
-      { subject: "Beta Low", A: avg(eeg, "low_beta_power"), fullMark: 100 },
-      { subject: "Beta High", A: avg(eeg, "high_beta_power"), fullMark: 100 },
-      { subject: "Gamma", A: avg(eeg, "low_gamma_power"), fullMark: 100 },
+  // Distribuição por faixas de atenção (para histograma)
+  const attDistribution = useMemo(() => {
+    const bands = [
+      { label: "0-24", min: 0, max: 25 },
+      { label: "25-49", min: 25, max: 50 },
+      { label: "50-74", min: 50, max: 75 },
+      { label: "75-100", min: 75, max: 101 },
     ];
+    return bands.map((b) => ({
+      label: b.label,
+      count: eeg.filter(
+        (e) => e.attention_value >= b.min && e.attention_value < b.max,
+      ).length,
+      color:
+        b.min >= 75
+          ? FM.greenDark
+          : b.min >= 50
+            ? FM.yellow
+            : b.min >= 25
+              ? FM.orange
+              : FM.red,
+    }));
   }, [eeg]);
 
-  // Dados para o Gráfico de Pizza (Distribuição de Ondas)
+  // Radar cerebral
+  const radarData = useMemo(
+    () =>
+      eeg.length
+        ? [
+            { subject: "Delta", A: avg(eeg, "delta_power") },
+            { subject: "α Low", A: avg(eeg, "low_alpha_power") },
+            { subject: "α High", A: avg(eeg, "high_alpha_power") },
+            { subject: "β Low", A: avg(eeg, "low_beta_power") },
+            { subject: "β High", A: avg(eeg, "high_beta_power") },
+            { subject: "γ", A: avg(eeg, "low_gamma_power") },
+          ]
+        : [],
+    [eeg],
+  );
+
+  // Pizza dominância de ondas
   const pieData = useMemo(() => {
     if (!eeg.length) return [];
     return [
-      { name: "Delta", value: avg(eeg, "delta_power"), color: C.delta },
+      { name: "Delta", value: avg(eeg, "delta_power"), color: FM.delta },
       {
         name: "Alpha",
-        value: (avg(eeg, "low_alpha_power") + avg(eeg, "high_alpha_power")) / 2,
-        color: C.alpha,
+        value: Math.round(
+          (avg(eeg, "low_alpha_power") + avg(eeg, "high_alpha_power")) / 2,
+        ),
+        color: FM.alpha,
       },
       {
         name: "Beta",
-        value: (avg(eeg, "low_beta_power") + avg(eeg, "high_beta_power")) / 2,
-        color: C.beta,
+        value: Math.round(
+          (avg(eeg, "low_beta_power") + avg(eeg, "high_beta_power")) / 2,
+        ),
+        color: FM.beta,
       },
-      { name: "Gamma", value: avg(eeg, "low_gamma_power"), color: C.gamma },
+      { name: "Gamma", value: avg(eeg, "low_gamma_power"), color: FM.gamma },
     ].filter((d) => d.value > 0);
   }, [eeg]);
 
-  // Dados para Comparação de Atenção por Tópico (Bar Chart)
-  const topicsComparisonData = useMemo(() => {
-    return topics.map((topic, i) => {
-      const start = new Date(topic.startOfAudio).getTime();
-      const end = new Date(topic.endOfAudio).getTime();
+  // Comparação de tópicos (bar)
+  const normalize = (str) =>
+    str
+      ?.trim()
+      .toLowerCase()
+      .normalize("NFD") // remove acentos
+      .replace(/[\u0300-\u036f]/g, "");
 
-      const slice = eeg.filter((e) => {
-        const t = new Date(e.timestamp);
-        return t >= start && t <= end;
+  const topicsComparisonData = useMemo(() => {
+    const grouped = {};
+
+    topics.forEach((t) => {
+      const key = normalize(t.description); // ← chave normalizada
+
+      const s = new Date(t.startOfAudio).getTime();
+      const e = new Date(t.endOfAudio).getTime();
+
+      const slice = eeg.filter((x) => {
+        const ts = new Date(x.timestamp).getTime();
+        return ts >= s && ts <= e;
       });
 
       const att = avg(slice, "attention_value");
       const med = avg(slice, "meditation_value");
-      console.log({
-        topic,
-        start,
-        end,
-        eegFirst: eeg[0],
-        sliceSize: slice.length,
-      });
-      return {
-        name: `T${i + 1}`,
-        fullName: topic.description,
-        Atenção: att ?? 0,
-        Meditação: med ?? 0,
-      };
-    });
-  }, [topics, eeg]);
 
+      if (!grouped[key]) {
+        grouped[key] = {
+          name: t.description.trim(), // ← mantém nome original bonito
+          atts: [],
+          meds: [],
+        };
+      }
+
+      if (att != null) grouped[key].atts.push(att);
+      if (med != null) grouped[key].meds.push(med);
+    });
+
+    return Object.values(grouped).map((g) => ({
+      name: g.name,
+      Atenção: g.atts.length
+        ? Math.round(g.atts.reduce((a, b) => a + b, 0) / g.atts.length)
+        : 0,
+      Meditação: g.meds.length
+        ? Math.round(g.meds.reduce((a, b) => a + b, 0) / g.meds.length)
+        : 0,
+    }));
+  }, [topics, eeg]);
+  // Amostrado para performance
   const eegSampled = useMemo(() => {
     if (eeg.length <= 500) return eeg;
     const step = Math.ceil(eeg.length / 500);
@@ -652,113 +954,70 @@ export default function DashboardSessao() {
     {
       key: "attention_value",
       label: "Atenção",
-      color: C.attention,
+      color: FM.blue,
       strokeWidth: 2.5,
     },
     {
       key: "meditation_value",
       label: "Meditação",
-      color: C.meditation,
+      color: FM.purple,
       strokeWidth: 2,
     },
-    { key: "delta_power", label: "Delta", color: C.delta, strokeWidth: 1.5 },
+    { key: "delta_power", label: "Delta", color: FM.delta, strokeWidth: 1.5 },
     {
       key: "low_alpha_power",
       label: "Alpha (low)",
-      color: C.alpha,
+      color: FM.alpha,
       strokeWidth: 1.5,
     },
     {
       key: "high_beta_power",
       label: "Beta (high)",
-      color: C.beta,
+      color: FM.beta,
       strokeWidth: 1.5,
     },
   ];
 
-  if (loading) {
+  // ── Loading / not found ────────────────────────────────────────────────────
+  if (loading)
     return (
       <div
         style={{
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          height: 300,
+          height: 280,
           gap: 12,
-          flexDirection: "column",
+          color: FM.textMuted,
+          fontSize: 14,
         }}
       >
-        <div
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: "50%",
-            border: `3px solid ${C.orange}22`,
-            borderTop: `3px solid ${C.orange}`,
-            animation: "spin 0.8s linear infinite",
-          }}
+        <RefreshCw
+          size={32}
+          style={{ color: FM.orange, animation: "spin 0.8s linear infinite" }}
         />
-        <span style={{ fontSize: 13, color: "#6b7280" }}>
-          Carregando sessão…
-        </span>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        Carregando dashboard…
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
-  }
 
-  if (!session) {
+  if (!session)
     return (
-      <div style={{ textAlign: "center", padding: "4rem", color: "#6b7280" }}>
+      <div
+        style={{ textAlign: "center", padding: "4rem", color: FM.textMuted }}
+      >
         <Brain size={40} style={{ opacity: 0.3, marginBottom: 12 }} />
         <p style={{ fontSize: 15 }}>Sessão não encontrada.</p>
       </div>
     );
-  }
 
-  const {
-    text: avgAttText,
-    bg: avgAttBg,
-    fg: avgAttFg,
-  } = attLabel(stats.avgAtt);
+  const ac = attLabel(stats.avgAtt);
   const duration = formatDuration(
     session.session_start_time,
     session.session_end_time,
   );
-  function HeatmapTimeline({ data }) {
-    if (!data.length) {
-      return (
-        <div style={{ textAlign: "center", padding: "1rem", color: "#9ca3af" }}>
-          Sem dados para heatmap
-        </div>
-      );
-    }
 
-    return (
-      <div
-        style={{
-          display: "flex",
-          gap: 2,
-          overflowX: "auto",
-          paddingBottom: 6,
-        }}
-      >
-        {data.map((d, i) => (
-          <div
-            key={i}
-            title={`${formatTimestamp(d.time)} - ${d.attention}%`}
-            style={{
-              width: 10,
-              height: 40,
-              background: getHeatColor(d.attention),
-              borderRadius: 2,
-              flexShrink: 0,
-              transition: "all .2s",
-            }}
-          />
-        ))}
-      </div>
-    );
-  }
   return (
     <div
       style={{
@@ -766,11 +1025,11 @@ export default function DashboardSessao() {
         margin: "0 auto",
         display: "flex",
         flexDirection: "column",
-        gap: "1.5rem",
+        gap: 16,
         paddingBottom: "3rem",
       }}
     >
-      {/* ── cabeçalho ─────────────────────────────────────────────────────── */}
+      {/* ── Header ──────────────────────────────────────────────────────── */}
       <div
         style={{
           display: "flex",
@@ -783,19 +1042,18 @@ export default function DashboardSessao() {
         <button
           onClick={() => navigate("/dashboard/historico-sessoes")}
           style={{
-            display: "flex",
+            display: "inline-flex",
             alignItems: "center",
             gap: 6,
             background: "none",
             border: "none",
             cursor: "pointer",
-            fontSize: 13,
-            color: "#6b7280",
+            fontSize: 12,
+            color: FM.textMuted,
             padding: 0,
           }}
         >
-          <ArrowLeft size={16} />
-          Voltar ao histórico
+          <ArrowLeft size={13} /> Histórico de Sessões
         </button>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -804,26 +1062,19 @@ export default function DashboardSessao() {
               width: 36,
               height: 36,
               borderRadius: 10,
-              background: `linear-gradient(135deg, ${C.orangeL}, ${C.orange})`,
+              background: `linear-gradient(135deg, ${FM.orange}, ${FM.orangeDark})`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Brain size={18} color="#fff" />
+            <Brain size={17} style={{ color: "#fff" }} />
           </div>
-          <div>
-            <h1
-              style={{
-                fontSize: 18,
-                fontWeight: 700,
-                color: "#111827",
-                margin: 0,
-              }}
-            >
-              Dashboard da Sessão
-            </h1>
-          </div>
+          <h1
+            style={{ fontSize: 18, fontWeight: 700, color: FM.text, margin: 0 }}
+          >
+            Dashboard da Sessão
+          </h1>
         </div>
 
         {stats.avgAtt != null && (
@@ -831,170 +1082,289 @@ export default function DashboardSessao() {
             style={{
               padding: "6px 14px",
               borderRadius: 8,
-              background: avgAttBg,
-              color: avgAttFg,
+              background: ac.bg,
+              color: ac.fg,
               fontSize: 13,
               fontWeight: 700,
+              border: `1px solid ${ac.border}`,
               display: "flex",
               alignItems: "center",
               gap: 6,
             }}
           >
-            <Brain size={14} color={avgAttFg} />
-            Atenção média: {stats.avgAtt}% · {avgAttText}
+            <Brain size={13} style={{ color: ac.fg }} />
+            Atenção média: {stats.avgAtt}% · {ac.text}
           </div>
         )}
       </div>
 
-      {/* ── cards de info ─────────────────────────────────────────────────── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px,1fr))",
-          gap: 12,
-        }}
-      >
+      {/* ── Info cards ──────────────────────────────────────────────────── */}
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
         <InfoCard
           icon={User}
           label="Paciente"
           value={session.patient_name}
-          accent={C.attention}
+          accentColor={FM.blue}
         />
         <InfoCard
           icon={Calendar}
           label="Início"
           value={formatDateFull(session.session_start_time)}
-          accent={C.orange}
+          accentColor={FM.orange}
         />
         <InfoCard
           icon={Calendar}
           label="Fim"
-          value={formatDateFull(session.session_end_time)}
-          accent={C.orange}
+          value={
+            session.session_end_time
+              ? formatDateFull(session.session_end_time)
+              : "Em andamento"
+          }
+          accentColor={FM.orange}
         />
         <InfoCard
           icon={Clock}
-          label="Duração total"
+          label="Duração"
           value={duration}
-          accent={C.meditation}
+          accentColor={FM.purple}
         />
       </div>
 
-      {/* ── SEÇÃO: Insights Profundos ────────────────────────────────────── */}
+      {/* ── Gauge + estatísticas rápidas + tendência ─────────────────── */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+          gridTemplateColumns: "auto 1fr",
           gap: 12,
+          flexWrap: "wrap",
         }}
       >
-        {/* Radar Chart: Perfil de Ondas */}
-        <div
-          style={{
-            background: "#fff",
-            border: "0.5px solid #e5e7eb",
-            borderRadius: 12,
-            padding: "1.25rem",
-          }}
-        >
-          <SectionTitle>
-            <Target size={14} /> Perfil Cerebral Médio
-          </SectionTitle>
-          <div style={{ height: 220 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                <PolarGrid stroke="#e5e7eb" />
-                <PolarAngleAxis
-                  dataKey="subject"
-                  tick={{ fontSize: 10, fill: "#6b7280" }}
-                />
-                <Radar
-                  name="Média da Sessão"
-                  dataKey="A"
-                  stroke={C.orange}
-                  fill={C.orange}
-                  fillOpacity={0.5}
-                />
-                <Tooltip content={<CustomTooltip />} />
-              </RadarChart>
-            </ResponsiveContainer>
+        <SectionCard>
+          <SectionTitle icon={Activity}>Estatísticas da Sessão</SectionTitle>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+              marginBottom: 14,
+            }}
+          >
+            <StatPill
+              label="Máx. Atenção"
+              value={stats.maxAtt}
+              color={FM.greenDark}
+              icon={TrendingUp}
+            />
+            <StatPill
+              label="Mín. Atenção"
+              value={stats.minAtt}
+              color={FM.red}
+              icon={TrendingDown}
+            />
+            <StatPill
+              label="Méd. Meditação"
+              value={stats.avgMed}
+              color={FM.purple}
+              icon={Brain}
+            />
+            <StatPill
+              label="Registros EEG"
+              value={stats.points}
+              color={FM.blue}
+              icon={Zap}
+            />
+            <StatPill
+              label="Zonas de Foco"
+              value={focusZones.length}
+              color={FM.orange}
+              icon={Target}
+            />
           </div>
-        </div>
 
-        {/* Pie Chart: Distribuição de Frequência */}
-        <div
-          style={{
-            background: "#fff",
-            border: "0.5px solid #e5e7eb",
-            borderRadius: 12,
-            padding: "1.25rem",
-          }}
-        >
-          <SectionTitle>
-            <PieIcon size={14} /> Dominância de Ondas
-          </SectionTitle>
-          <div style={{ height: 220 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+          {/* Tendência 1ª vs 2ª metade */}
+          {trend && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "10px 14px",
+                background:
+                  trend.diff >= 5
+                    ? FM.greenLight
+                    : trend.diff <= -5
+                      ? FM.redLight
+                      : FM.yellowLight,
+                border: `1px solid ${trend.diff >= 5 ? FM.greenBorder : trend.diff <= -5 ? FM.redBorder : FM.yellowBorder}`,
+                borderRadius: 8,
+                fontSize: 13,
+              }}
+            >
+              {trend.diff >= 5 ? (
+                <TrendingUp size={16} style={{ color: FM.greenDark }} />
+              ) : trend.diff <= -5 ? (
+                <TrendingDown size={16} style={{ color: FM.red }} />
+              ) : (
+                <Minus size={16} style={{ color: FM.yellow }} />
+              )}
+              <span
+                style={{
+                  fontWeight: 600,
+                  color:
+                    trend.diff >= 5
+                      ? FM.greenDark
+                      : trend.diff <= -5
+                        ? FM.red
+                        : FM.yellow,
+                }}
+              >
+                {trend.diff >= 5
+                  ? "Atenção crescente"
+                  : trend.diff <= -5
+                    ? "Atenção decrescente"
+                    : "Atenção estável"}
+              </span>
+              <span style={{ color: FM.textMuted, fontSize: 12 }}>
+                1ª metade: {trend.first} → 2ª metade: {trend.second} (
+                {trend.diff >= 0 ? "+" : ""}
+                {trend.diff} pts)
+              </span>
+            </div>
+          )}
+        </SectionCard>
       </div>
+      {/* ── Engajamento por Tópico (Bar) ─────────────────────────────── */}
+      {topics.length > 0 && topicsComparisonData.length > 0 && (
+        <SectionCard>
+          <SectionTitle icon={BarChart3}>Engajamento por Tópico</SectionTitle>
+          <p
+            style={{
+              fontSize: 12,
+              color: FM.textMuted,
+              margin: "-10px 0 12px",
+            }}
+          >
+            Comparação de atenção e meditação média em cada assunto detectado
+            pela IA
+          </p>
+          <div style={{ height: 240 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={topicsComparisonData}
+                margin={{ top: 10, right: 20, left: -20, bottom: 5 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke={FM.borderLight}
+                />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 12, fill: FM.textMuted }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  domain={[0, 100]}
+                  tick={{ fontSize: 10, fill: FM.textMuted }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
+                <Bar
+                  dataKey="Atenção"
+                  fill={FM.blue}
+                  radius={[5, 5, 0, 0]}
+                  barSize={28}
+                />
+                <Bar
+                  dataKey="Meditação"
+                  fill={FM.purple}
+                  radius={[5, 5, 0, 0]}
+                  barSize={28}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </SectionCard>
+      )}
+      {/* ── Histograma de distribuição da atenção ────────────────────── */}
+      <SectionCard>
+        <SectionTitle icon={BarChart3}>
+          Distribuição do Nível de Atenção
+        </SectionTitle>
+        <p
+          style={{ fontSize: 12, color: FM.textMuted, margin: "-10px 0 12px" }}
+        >
+          Quantos registros EEG caíram em cada faixa de atenção — útil para
+          identificar padrões dominantes
+        </p>
+        <div style={{ height: 180 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={attDistribution}
+              margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke={FM.borderLight}
+              />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 11, fill: FM.textMuted }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 10, fill: FM.textMuted }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar
+                dataKey="count"
+                name="Registros"
+                radius={[5, 5, 0, 0]}
+                barSize={40}
+              >
+                {attDistribution.map((d, i) => (
+                  <Cell key={i} fill={d.color} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </SectionCard>
 
-      {/* ── gráfico principal EEG ─────────────────────────────────────────── */}
-      <div
-        style={{
-          background: "#fff",
-          border: "0.5px solid #e5e7eb",
-          borderRadius: 12,
-          padding: "1.25rem",
-        }}
-      >
+      {/* ── Gráfico principal EEG ────────────────────────────────────── */}
+      <SectionCard>
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "flex-start",
-            marginBottom: "1rem",
+            marginBottom: 12,
             flexWrap: "wrap",
             gap: 8,
           }}
         >
-          <SectionTitle>
-            <Activity size={14} /> Atividade cerebral temporal
+          <SectionTitle icon={Activity}>
+            Atividade Cerebral Temporal
           </SectionTitle>
-          <p
-            style={{
-              fontSize: 11,
-              color: "#9ca3af",
-              margin: 0,
-              alignSelf: "flex-end",
-            }}
-          >
-            Áreas amarelas = tópicos detectados pela IA
+          <p style={{ fontSize: 11, color: FM.textMuted, margin: 0 }}>
+            Áreas sombreadas = tópicos detectados pela IA
           </p>
         </div>
 
+        {/* Toggles */}
         <div
           style={{
             display: "flex",
             flexWrap: "wrap",
-            gap: 8,
-            marginBottom: "1rem",
+            gap: 6,
+            marginBottom: 14,
           }}
         >
           {lines.map((l) => (
@@ -1007,12 +1377,12 @@ export default function DashboardSessao() {
                 gap: 5,
                 padding: "4px 10px",
                 borderRadius: 20,
-                border: `1.5px solid ${visible[l.key] ? l.color : "#e5e7eb"}`,
+                border: `1.5px solid ${visible[l.key] ? l.color : FM.border}`,
                 background: visible[l.key] ? l.color + "15" : "transparent",
                 cursor: "pointer",
                 fontSize: 11,
-                fontWeight: 500,
-                color: visible[l.key] ? l.color : "#9ca3af",
+                fontWeight: 600,
+                color: visible[l.key] ? l.color : FM.textMuted,
                 transition: "all .15s",
               }}
             >
@@ -1021,7 +1391,7 @@ export default function DashboardSessao() {
                   width: 8,
                   height: 8,
                   borderRadius: "50%",
-                  background: visible[l.key] ? l.color : "#d1d5db",
+                  background: visible[l.key] ? l.color : FM.border,
                 }}
               />
               {l.label}
@@ -1040,9 +1410,9 @@ export default function DashboardSessao() {
               gap: 8,
             }}
           >
-            <Activity size={32} style={{ color: "#d1d5db" }} />
-            <p style={{ fontSize: 13, color: "#9ca3af" }}>
-              Nenhum dado EEG registrado nesta sessão.
+            <Activity size={32} style={{ color: FM.border }} />
+            <p style={{ fontSize: 13, color: FM.textMuted }}>
+              Nenhum dado EEG registrado.
             </p>
           </div>
         ) : (
@@ -1054,19 +1424,19 @@ export default function DashboardSessao() {
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="#f3f4f6"
+                  stroke={FM.borderLight}
                   vertical={false}
                 />
                 <XAxis
                   dataKey="timestamp"
                   tickFormatter={formatTimestamp}
-                  stroke="#d1d5db"
-                  tick={{ fontSize: 10, fill: "#9ca3af" }}
+                  stroke={FM.border}
+                  tick={{ fontSize: 10, fill: FM.textMuted }}
                   tickLine={false}
                 />
                 <YAxis
-                  stroke="#d1d5db"
-                  tick={{ fontSize: 10, fill: "#9ca3af" }}
+                  stroke={FM.border}
+                  tick={{ fontSize: 10, fill: FM.textMuted }}
                   tickLine={false}
                   axisLine={false}
                   domain={[0, 100]}
@@ -1078,126 +1448,203 @@ export default function DashboardSessao() {
                     key={i}
                     x1={t.startOfAudio}
                     x2={t.endOfAudio}
-                    fill={C.audio}
-                    fillOpacity={0.4}
-                    stroke={C.audioBorder}
-                    strokeOpacity={0.3}
+                    fill={FM.yellowLight}
+                    fillOpacity={0.6}
+                    stroke={FM.yellowBorder}
+                    strokeOpacity={0.5}
                   />
                 ))}
 
-                <ReferenceLine y={50} stroke="#e5e7eb" strokeDasharray="4 4" />
+                {/* Zonas de foco — highlight verde */}
+                {focusZones.slice(0, 5).map((z, i) => (
+                  <ReferenceArea
+                    key={`fz-${i}`}
+                    x1={z.from}
+                    x2={z.to}
+                    fill={FM.greenLight}
+                    fillOpacity={0.3}
+                    stroke={FM.greenBorder}
+                    strokeOpacity={0.4}
+                  />
+                ))}
 
-                {lines.map((l) =>
-                  visible[l.key] ? (
-                    <Line
-                      key={l.key}
-                      type="monotone"
-                      dataKey={l.key}
-                      stroke={l.color}
-                      strokeWidth={l.strokeWidth}
-                      dot={false}
-                      isAnimationActive={false}
-                      name={l.label}
-                    />
-                  ) : null,
+                <ReferenceLine
+                  y={50}
+                  stroke={FM.border}
+                  strokeDasharray="4 4"
+                  label={{
+                    value: "50",
+                    position: "insideLeft",
+                    fontSize: 9,
+                    fill: FM.textMuted,
+                  }}
+                />
+                <ReferenceLine
+                  y={75}
+                  stroke={FM.greenBorder}
+                  strokeDasharray="3 3"
+                  label={{
+                    value: "75",
+                    position: "insideLeft",
+                    fontSize: 9,
+                    fill: FM.greenDark,
+                  }}
+                />
+
+                {lines.map(
+                  (l) =>
+                    visible[l.key] && (
+                      <Line
+                        key={l.key}
+                        type="monotone"
+                        dataKey={l.key}
+                        stroke={l.color}
+                        strokeWidth={l.strokeWidth}
+                        dot={false}
+                        isAnimationActive={false}
+                        name={l.label}
+                      />
+                    ),
                 )}
               </LineChart>
             </ResponsiveContainer>
           </div>
         )}
-      </div>
-      {/* ── heatmap de atenção ao longo do tempo ─────────────────────────────── */}
+      </SectionCard>
+
+      {/* ── Heatmap ──────────────────────────────────────────────────── */}
+      <SectionCard>
+        <SectionTitle>Heatmap de Atenção ao Longo do Tempo</SectionTitle>
+        <p
+          style={{ fontSize: 12, color: FM.textMuted, margin: "-10px 0 12px" }}
+        >
+          Cada barra = 10 segundos. Passe o cursor para ver o timestamp exato.
+        </p>
+        <HeatmapTimeline data={heatmapData} />
+      </SectionCard>
+
+      {/* ── Radar + Pizza ────────────────────────────────────────────── */}
       <div
         style={{
-          background: "#fff",
-          border: "0.5px solid #e5e7eb",
-          borderRadius: 12,
-          padding: "1.25rem",
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: 12,
         }}
       >
-        <SectionTitle>Heatmap de Atenção ao Longo do Tempo</SectionTitle>
-
-        <HeatmapTimeline data={heatmapData} />
-
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            marginTop: 10,
-            fontSize: 11,
-            color: "#6b7280",
-          }}
-        >
-          <span>🔴 Baixo</span>
-          <span>🟠 Médio-baixo</span>
-          <span>🟡 Médio</span>
-          <span>🟢 Alto</span>
-        </div>
-      </div>
-      {/* ── Comparação de Tópicos (Bar Chart) ──────────────────────────────── */}
-      {topics.length > 0 && (
-        <div
-          style={{
-            background: "#fff",
-            border: "0.5px solid #e5e7eb",
-            borderRadius: 12,
-            padding: "1.25rem",
-          }}
-        >
-          <SectionTitle>
-            <BarChart3 size={14} /> Engajamento por Tópico
-          </SectionTitle>
-          <div style={{ height: 250 }}>
+        <SectionCard>
+          <SectionTitle icon={Target}>Perfil de Ondas Cerebrais</SectionTitle>
+          <div style={{ height: 220 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={topicsComparisonData}
-                margin={{ top: 20, right: 30, left: -20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis
-                  domain={[0, 100]}
-                  tick={{ fontSize: 10 }}
-                  axisLine={false}
+              <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
+                <PolarGrid stroke={FM.borderLight} />
+                <PolarAngleAxis
+                  dataKey="subject"
+                  tick={{ fontSize: 10, fill: FM.textMuted }}
+                />
+                <Radar
+                  name="Sessão"
+                  dataKey="A"
+                  stroke={FM.orange}
+                  fill={FM.orange}
+                  fillOpacity={0.35}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
-                <Bar
-                  dataKey="Atenção"
-                  fill={C.attention}
-                  radius={[4, 4, 0, 0]}
-                  barSize={30}
-                />
-                <Bar
-                  dataKey="Meditação"
-                  fill={C.meditation}
-                  radius={[4, 4, 0, 0]}
-                  barSize={30}
-                />
-              </BarChart>
+              </RadarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </SectionCard>
+
+        <SectionCard>
+          <SectionTitle icon={PieIcon}>Dominância de Ondas</SectionTitle>
+          <div style={{ height: 220 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  innerRadius={55}
+                  outerRadius={80}
+                  paddingAngle={4}
+                  dataKey="value"
+                >
+                  {pieData.map((e, i) => (
+                    <Cell key={i} fill={e.color} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </SectionCard>
+      </div>
+
+      {/* ── Zonas de Foco ────────────────────────────────────────────── */}
+      {focusZones.length > 0 && (
+        <SectionCard>
+          <SectionTitle icon={CheckCircle}>
+            Zonas de Foco Identificadas
+          </SectionTitle>
+          <p
+            style={{
+              fontSize: 12,
+              color: FM.textMuted,
+              margin: "-10px 0 12px",
+            }}
+          >
+            Períodos contínuos com atenção ≥ 60 — momentos de maior engajamento
+            do paciente
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {focusZones.map((z, i) => (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "10px 14px",
+                  background: FM.greenLight,
+                  border: `1px solid ${FM.greenBorder}`,
+                  borderRadius: 8,
+                }}
+              >
+                <CheckCircle
+                  size={14}
+                  style={{ color: FM.greenDark, flexShrink: 0 }}
+                />
+                <span
+                  style={{ fontSize: 13, fontWeight: 600, color: FM.greenDark }}
+                >
+                  Zona {i + 1}
+                </span>
+                <span style={{ fontSize: 12, color: FM.textMid }}>
+                  {formatTimestamp(z.from)} → {formatTimestamp(z.to)}
+                </span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: FM.textMuted,
+                    marginLeft: "auto",
+                  }}
+                >
+                  {z.len} pontos
+                </span>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
       )}
 
-      {/* ── tópicos detectados ────────────────────────────────────────────── */}
-      <div
-        style={{
-          background: "#fff",
-          border: "0.5px solid #e5e7eb",
-          borderRadius: 12,
-          padding: "1.25rem",
-        }}
-      >
-        <SectionTitle>
-          Assuntos detectados pela IA ({topics.length})
+      {/* ── Tópicos detectados pela IA ───────────────────────────────── */}
+      <SectionCard>
+        <SectionTitle icon={Mic}>
+          Tópicos Detectados pela IA ({topics.length})
         </SectionTitle>
-
         {topics.length === 0 ? (
           <div style={{ textAlign: "center", padding: "2rem 1rem" }}>
-            <Mic size={28} style={{ color: "#d1d5db", marginBottom: 8 }} />
-            <p style={{ fontSize: 13, color: "#9ca3af" }}>
-              Nenhum tópico de áudio detectado nesta sessão.
+            <Mic size={28} style={{ color: FM.border, marginBottom: 8 }} />
+            <p style={{ fontSize: 13, color: FM.textMuted }}>
+              Nenhum tópico de áudio detectado.
             </p>
           </div>
         ) : (
@@ -1214,7 +1661,52 @@ export default function DashboardSessao() {
             ))}
           </div>
         )}
-      </div>
+      </SectionCard>
+
+      {/* Alerta se atenção baixa */}
+      {stats.avgAtt != null && stats.avgAtt < 40 && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 10,
+            padding: "14px 16px",
+            background: FM.redLight,
+            border: `1px solid ${FM.redBorder}`,
+            borderRadius: 10,
+          }}
+        >
+          <AlertTriangle
+            size={18}
+            style={{ color: FM.red, flexShrink: 0, marginTop: 1 }}
+          />
+          <div>
+            <p
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: FM.red,
+                margin: "0 0 2px",
+              }}
+            >
+              Atenção média abaixo de 40%
+            </p>
+            <p style={{ fontSize: 12, color: FM.textMid, margin: 0 }}>
+              Este nível de engajamento pode indicar dificuldade de
+              concentração, cansaço ou necessidade de adaptação da atividade.
+              Considere revisar o contexto da sessão e comparar com sessões
+              anteriores.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: ${FM.bgSoft}; }
+        ::-webkit-scrollbar-thumb { background: ${FM.orangeLight}; border-radius: 99px; }
+      `}</style>
     </div>
   );
 }

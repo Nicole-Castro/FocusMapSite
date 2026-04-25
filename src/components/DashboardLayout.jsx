@@ -22,7 +22,21 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
+  const FM = {
+    orange: "#ff9e3d",
+    orangeDark: "#f86f26",
+    orangePale: "#fff4e8",
+    orangeBorder: "#ffbc54",
 
+    text: "#2a1a08",
+    textMuted: "#aa8661",
+
+    bg: "#ffffff",
+    bgSoft: "#faf7f4",
+
+    border: "#ede0d0",
+    borderLight: "#f5ece0",
+  };
   const menuItems = [
     { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { path: "/dashboard/pacientes", icon: Users, label: "Pacientes" },
@@ -59,14 +73,24 @@ export default function DashboardLayout() {
     loadUser();
   }, []);
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div style={{ background: FM.bgSoft }} className="flex h-screen">
       {/* SIDEBAR DESKTOP */}
       <aside
-        className={`hidden lg:flex flex-col bg-white border-r transition-all duration-300
-        ${collapsed ? "w-15" : "w-64"}`}
+        className={`hidden lg:flex flex-col transition-all duration-300`}
+        style={{
+          background: FM.bg,
+          borderRight: `1px solid ${FM.border}`,
+          width: collapsed ? 60 : 260,
+        }}
       >
         {/* LOGO */}
-        <div className="flex items-center justify-between h-20 border-b bg-gradient-to-r from-primary-500 to-primary-600 px-4">
+        <div
+          className="flex items-center justify-between h-20 px-4"
+          style={{
+            borderBottom: `1px solid ${FM.border}`,
+            background: `linear-gradient(135deg, ${FM.orange}, ${FM.orangeDark})`,
+          }}
+        >
           {!collapsed && (
             <img
               src="/images/logo2.png"
@@ -89,20 +113,33 @@ export default function DashboardLayout() {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition group
-              ${
-                isActive(item.path)
-                  ? "bg-primary-50 text-primary-600"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-lg transition group"
+              style={{
+                background: isActive(item.path) ? FM.orangePale : "transparent",
+                color: isActive(item.path) ? FM.orangeDark : FM.text,
+                border: isActive(item.path)
+                  ? `1px solid ${FM.orangeBorder}`
+                  : "1px solid transparent",
+              }}
             >
               <item.icon size={20} />
 
               {!collapsed && <span>{item.label}</span>}
 
-              {/* Tooltip quando colapsado */}
               {collapsed && (
-                <span className="absolute left-20 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100">
+                <span
+                  style={{
+                    position: "absolute",
+                    left: 70,
+                    background: FM.text,
+                    color: "#fff",
+                    fontSize: 10,
+                    padding: "2px 6px",
+                    borderRadius: 4,
+                    opacity: 0,
+                  }}
+                  className="group-hover:opacity-100"
+                >
                   {item.label}
                 </span>
               )}
@@ -114,20 +151,39 @@ export default function DashboardLayout() {
       {/* MOBILE SIDEBAR */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
+          {/* overlay */}
           <div
-            className="fixed inset-0 bg-black/50"
+            className="fixed inset-0"
+            style={{ background: "rgba(0,0,0,0.3)" }}
             onClick={() => setSidebarOpen(false)}
           />
 
-          <aside className="fixed top-0 left-0 w-64 h-full bg-white shadow-lg">
-            <div className="flex justify-between items-center p-4 bg-primary-500 text-white">
-              <span>Menu</span>
+          {/* sidebar */}
+          <aside
+            className="fixed top-0 left-0 h-full shadow-lg flex flex-col"
+            style={{
+              width: 260,
+              background: FM.bg,
+              borderRight: `1px solid ${FM.border}`,
+            }}
+          >
+            {/* header */}
+            <div
+              className="flex justify-between items-center px-4 h-16"
+              style={{
+                background: `linear-gradient(135deg, ${FM.orange}, ${FM.orangeDark})`,
+                color: "#fff",
+              }}
+            >
+              <span style={{ fontWeight: 600 }}>Menu</span>
+
               <button onClick={() => setSidebarOpen(false)}>
                 <X />
               </button>
             </div>
 
-            <nav className="p-4 space-y-2">
+            {/* menu */}
+            <nav className="p-3 flex flex-col gap-2">
               {menuItems.map((item) => (
                 <button
                   key={item.path}
@@ -135,13 +191,62 @@ export default function DashboardLayout() {
                     navigate(item.path);
                     setSidebarOpen(false);
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100"
+                  className="w-full flex items-center gap-3 px-3 py-3 rounded-lg transition"
+                  style={{
+                    background: isActive(item.path)
+                      ? FM.orangePale
+                      : "transparent",
+                    color: isActive(item.path) ? FM.orangeDark : FM.text,
+                    border: isActive(item.path)
+                      ? `1px solid ${FM.orangeBorder}`
+                      : "1px solid transparent",
+                  }}
                 >
                   <item.icon size={20} />
                   {item.label}
                 </button>
               ))}
             </nav>
+
+            {/* footer (perfil rápido) */}
+            <div
+              style={{
+                marginTop: "auto",
+                borderTop: `1px solid ${FM.border}`,
+                padding: 12,
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: "50%",
+                    background: FM.orange,
+                    color: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: 600,
+                    fontSize: 13,
+                  }}
+                >
+                  {getInitials(user?.name || "")}
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{ fontSize: 13, fontWeight: 600, color: FM.text }}
+                  >
+                    {user?.name || "Usuário"}
+                  </div>
+                </div>
+
+                <button onClick={handleLogout} style={{ color: FM.orangeDark }}>
+                  <LogOut size={18} />
+                </button>
+              </div>
+            </div>
           </aside>
         </div>
       )}
@@ -149,12 +254,19 @@ export default function DashboardLayout() {
       {/* MAIN */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* HEADER */}
-        <header className="h-16 bg-white border-b flex items-center justify-between px-4 lg:px-8">
+        <header
+          className="h-16 flex items-center justify-between px-4 lg:px-8"
+          style={{
+            background: FM.bg,
+            borderBottom: `1px solid ${FM.border}`,
+          }}
+        >
           <button onClick={() => setSidebarOpen(true)} className="lg:hidden">
             <Menu />
           </button>
 
-          <h1 className="font-semibold text-gray-800">
+          <h1 style={{ color: FM.text, fontWeight: 600 }}>
+            {" "}
             {menuItems.find((item) => isActive(item.path))?.label ||
               "Dashboard"}
           </h1>
@@ -165,7 +277,20 @@ export default function DashboardLayout() {
               onClick={() => setProfileOpen(!profileOpen)}
               className="flex items-center gap-2"
             >
-              <div className="w-10 h-10 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold">
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  background: FM.orange,
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 600,
+                }}
+              >
+                {" "}
                 {getInitials(user?.name || "")}
               </div>
 
@@ -176,13 +301,20 @@ export default function DashboardLayout() {
 
             {/* DROPDOWN */}
             {profileOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg z-50">
+              <div
+                className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg z-50"
+                style={{
+                  background: FM.bg,
+                  border: `1px solid ${FM.border}`,
+                }}
+              >
                 <button
                   onClick={() => {
                     setProfileOpen(false);
                     navigate("/dashboard/perfil");
                   }}
-                  className="w-full flex items-center gap-2 px-4 py-3 hover:bg-gray-100 text-sm"
+                  className="w-full flex items-center gap-2 px-4 py-3 text-sm"
+                  style={{ color: FM.text }}
                 >
                   <User size={16} />
                   Meu Perfil
@@ -190,7 +322,8 @@ export default function DashboardLayout() {
 
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-4 py-3 hover:bg-red-50 text-red-600 text-sm"
+                  className="w-full flex items-center gap-2 px-4 py-3 text-sm"
+                  style={{ color: FM.red }}
                 >
                   <LogOut size={16} />
                   Sair
@@ -201,7 +334,11 @@ export default function DashboardLayout() {
         </header>
 
         {/* CONTENT */}
-        <main className="flex-1 overflow-auto p-4 lg:p-8">
+        <main
+          className="flex-1 overflow-auto p-4 lg:p-8"
+          style={{ background: FM.bgSoft }}
+        >
+          {" "}
           <Outlet />
         </main>
       </div>
