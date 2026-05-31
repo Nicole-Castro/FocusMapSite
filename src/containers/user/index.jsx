@@ -539,7 +539,7 @@ export default function UserProfile() {
                 padding: "3px 10px",
               }}
             >
-              <Stethoscope size={11} /> {user?.type || "Profissional"}
+              <Stethoscope size={11} /> {user?.role || "Profissional"}
             </span>
             {/* Badge status — verde */}
             <span

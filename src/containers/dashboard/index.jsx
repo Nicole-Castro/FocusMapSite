@@ -38,7 +38,7 @@ export default function Dashboard() {
       const patientsRes = await getTotalPatients();
       const totalPatients = patientsRes.total ?? 0;
       const sessionsRes = await getSessionsByProfessional(userId);
-      const sessions = sessionsRes.data ?? [];
+      const sessions = sessionsRes ?? [];
       setStats({ totalPatients, sessions: sessions.length });
     } catch (err) {
       console.error("Erro ao carregar dashboard:", err);
