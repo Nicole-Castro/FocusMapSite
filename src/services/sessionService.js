@@ -1,7 +1,12 @@
 import api from "./api.js";
-export async function getSessionsByProfessional(professionalId) {
-  const res = await api.get(`/Session/professional`);
-  return res.data.data; // pega apenas a lista
+export async function getSessionsByProfessional({ page = 1, pageSize = 10, status, patientId, dateFrom, dateTo } = {}) {
+  const params = { page, pageSize };
+  if (status)    params.status    = status;
+  if (patientId) params.patientId = patientId;
+  if (dateFrom)  params.dateFrom  = dateFrom;
+  if (dateTo)    params.dateTo    = dateTo;
+  const res = await api.get(`/Session/professional`, { params });
+  return res.data.data; // { items, totalCount, page, pageSize, totalPages }
 }
 
 export async function getSessionsByPatient(patientId) {
