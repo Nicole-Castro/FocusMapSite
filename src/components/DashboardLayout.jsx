@@ -32,7 +32,7 @@ export default function DashboardLayout() {
     textMuted: "#aa8661",
 
     bg: "#ffffff",
-    bgSoft: "#faf7f4",
+    bgSoft: "#ffffff",
 
     border: "#ede0d0",
     borderLight: "#f5ece0",

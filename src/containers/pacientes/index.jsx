@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   RefreshCw, Search, Trash2,
   ChevronLeft, ChevronRight, MapPin, Users, PlusCircle,
+  TrendingUp
 } from "lucide-react";
 import { getPatients } from "../../services/getPatient";
 import { useNavigate } from "react-router-dom";
@@ -240,35 +241,51 @@ export default function PacientesList() {
                 {patient.email}
               </p>
 
-              {/* Ações */}
-              <div style={{ display: "flex", justifyContent: "center", gap: 6 }}>
-                <button
-                  onClick={() => navigate(`/dashboard/patient/${patient.id}/points`)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 5,
-                    padding: "5px 10px", fontSize: 12, fontWeight: 600,
-                    background: FM.blueLight, color: FM.blueDark,
-                    border: `1px solid ${FM.blueBorder}`,
-                    borderRadius: 6, cursor: "pointer",
-                  }}
-                >
-                  <MapPin size={12} /> POIs
-                </button>
+            
+{/* Ações */}
+<div style={{ display: "flex", justifyContent: "center", gap: 6 }}>
+  <button
+    onClick={() => navigate(`/dashboard/patient/${patient.id}/points`)}
+    style={{
+      display: "flex", alignItems: "center", gap: 5,
+      padding: "5px 10px", fontSize: 12, fontWeight: 600,
+      background: FM.blueLight, color: FM.blueDark,
+      border: `1px solid ${FM.blueBorder}`,
+      borderRadius: 6, cursor: "pointer",
+    }}
+  >
+    <MapPin size={12} /> POIs
+  </button>
 
-                <button
-                  onClick={() => handleDelete(patient)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 5,
-                    padding: "5px 10px", fontSize: 12, fontWeight: 600,
-                    background: FM.redLight, color: FM.red,
-                    border: `1px solid ${FM.redBorder}`,
-                    borderRadius: 6, cursor: "pointer",
-                  }}
-                >
-                  <Trash2 size={12} /> Excluir
-                </button>
-              </div>
-            </div>
+  {/* NOVO BOTÃO */}
+  <button
+    onClick={() => navigate(`/dashboard/patient-progress/${patient.id}`)}
+    style={{
+      display: "flex", alignItems: "center", gap: 5,
+      padding: "5px 10px", fontSize: 12, fontWeight: 600,
+      background: FM.orangePale, color: FM.orangeDark,
+      border: `1px solid ${FM.orangeBorder}`,
+      borderRadius: 6, cursor: "pointer",
+    }}
+  >
+    <TrendingUp size={12} /> Progresso
+  </button>
+
+  <button
+    onClick={() => handleDelete(patient)}
+    style={{
+      display: "flex", alignItems: "center", gap: 5,
+      padding: "5px 10px", fontSize: 12, fontWeight: 600,
+      background: FM.redLight, color: FM.red,
+      border: `1px solid ${FM.redBorder}`,
+      borderRadius: 6, cursor: "pointer",
+    }}
+  >
+    <Trash2 size={12} /> Excluir
+  </button>
+</div>
+
+            </div>  
           ))}
         </div>
       )}

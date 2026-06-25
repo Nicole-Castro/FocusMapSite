@@ -17,6 +17,7 @@ import HistoricoSessoes from "./src/containers/historico-sessoes";
 import SessaoDetalhes from "./src/containers/sessao-detalhes";
 import DashboardSessao from "./src/containers/session-dashboard";
 import UserProfile from "./src/containers/user";
+import DashboardProgressoPaciente from "./src/containers/patient-progress";
 
 function App() {
   return (
@@ -54,6 +55,10 @@ function App() {
           <Route path="sessao-detalhes/:id" element={<SessaoDetalhes />} />
           <Route path="sessao/:id" element={<DashboardSessao />} />
           <Route path="/dashboard/perfil" element={<UserProfile />} />
+          <Route
+            path="/dashboard/patient-progress/:patientId"
+            element={<DashboardProgressoPaciente />}
+          />
         </Route>
       </Routes>
     </Router>
