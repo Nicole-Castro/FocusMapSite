@@ -23,6 +23,18 @@ export async function getPatients(searchTerm = "") {
     };
   }
 }
+
+export async function deletePatient(id) {
+  try {
+    const response = await api.delete(`/User/DeletePatient/${id}`);
+    return { success: true, data: response.data };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.response?.data?.message || "Erro ao excluir paciente.",
+    };
+  }
+}
 export async function getTotalPatients() {
   try {
     const res = await api.get("/User/TotalPatients");

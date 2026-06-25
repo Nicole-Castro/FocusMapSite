@@ -171,24 +171,6 @@ export default function Login() {
             {loading ? "Entrando..." : "Entrar"}
           </button>
 
-          {/* Botão Google */}
-          <button
-            onClick={() => googleLogin()}
-            disabled={loading}
-            className="w-full py-3 bg-white text-primary-600 font-medium border-2 border-primary-500 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            Login com o Google
-          </button>
-
-          <p className="text-center text-sm text-gray-600 mt-6">
-            Ainda não tem conta?{' '}
-            <button
-              onClick={() => navigate('/cadastro')}
-              className="text-primary-600 font-semibold hover:text-primary-700 transition"
-            >
-              Faça seu cadastro
-            </button>
-          </p>
         </div>
       </div>
     </div>

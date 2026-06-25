@@ -4,9 +4,8 @@ import {
   ChevronLeft, ChevronRight, MapPin, Users, PlusCircle,
   TrendingUp
 } from "lucide-react";
-import { getPatients } from "../../services/getPatient";
 import { useNavigate } from "react-router-dom";
-
+import { getPatients, deletePatient } from "../../services/getPatient";
 // ─── Paleta FocusMap ──────────────────────────────────────────────────────────
 const FM = {
   orange:       "#ff9e3d",
@@ -82,10 +81,15 @@ export default function PacientesList() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentPatients = filteredPatients.slice(startIndex, startIndex + itemsPerPage);
 
-  const handleDelete = (patient) => {
-    if (confirm(`Excluir ${patient.name}?`)) alert("Implementar delete real aqui");
+  const handleDelete = async (patient) => {
+    if (!confirm(`Excluir ${patient.name}? Esta ação não pode ser desfeita.`)) return;
+    const res = await deletePatient(patient.id);
+    if (res.success) {
+      setPatients((prev) => prev.filter((p) => p.id !== patient.id));
+    } else {
+      alert(res.message);
+    }
   };
-
   return (
     <div style={{ maxWidth: 960, margin: "0 auto", padding: "4px 0 3rem", display: "flex", flexDirection: "column", gap: 16 }}>
 
