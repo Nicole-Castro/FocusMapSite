@@ -7,7 +7,9 @@ const api = axios.create({
 });
 console.log("API URL:", import.meta.env.VITE_API_URL);
 // Interceptor para incluir o token JWT
-const noAuthRoutes = ["/User/CreateUser", "/User/Login"];
+// OBS: /User/CreateUser não é mais autocadastro público — agora é admin-only e
+// precisa do token do admin, por isso não entra mais nessa lista.
+const noAuthRoutes = ["/User/Login"];
 
 api.interceptors.request.use((config) => {
   if (!noAuthRoutes.some((r) => config.url.includes(r))) {
@@ -30,9 +32,13 @@ api.interceptors.response.use(
     }
 
     const status = error.response.status;
+    // Um 401 na própria tentativa de login é só "e-mail ou senha errados" —
+    // isso a tela de login já trata sozinha. O redirect/logout automático abaixo
+    // é só pra sessão expirada em outras chamadas, não pra essa.
+    const isLoginAttempt = error.config?.url?.includes("/Login/login");
 
     // Token expirado
-    if (status === 401) {
+    if (status === 401 && !isLoginAttempt) {
       console.warn("Token expirado ou inválido.");
 
       // (opcional) logout automático

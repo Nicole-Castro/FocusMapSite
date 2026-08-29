@@ -9,7 +9,6 @@ import {
   EyeOff,
   CheckCircle2,
   XCircle,
-  Stethoscope,
   Shield,
   Clock,
   Pencil,
@@ -273,7 +272,7 @@ function SectionCard({ title, icon: Icon, children, accent }) {
 
 // ─── Página principal ─────────────────────────────────────────────────────────
 
-export default function UserProfile() {
+export default function PerfilProfissional() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
@@ -524,23 +523,6 @@ export default function UserProfile() {
             {user?.email || "—"}
           </p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {/* Badge tipo — azul complementar */}
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 5,
-                fontSize: 11,
-                fontWeight: 600,
-                background: FM.blueLight,
-                color: FM.blueDark,
-                border: `1px solid ${FM.blueBorder}`,
-                borderRadius: 99,
-                padding: "3px 10px",
-              }}
-            >
-              <Stethoscope size={11} /> {user?.role || "Profissional"}
-            </span>
             {/* Badge status — verde */}
             <span
               style={{

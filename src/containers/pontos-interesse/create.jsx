@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Save, MapPin, AlertCircle } from "lucide-react";
+import { ArrowLeft, Save, Target, AlertCircle } from "lucide-react";
 import InterestPointsService from "../../services/interestPointsService";
 
 // ─── Paleta FocusMap ──────────────────────────────────────────────────────────
@@ -27,14 +27,14 @@ const SUGGESTIONS = ["Matemática", "Música", "História", "Esportes"];
 
 export default function CreatePoint() {
   const navigate = useNavigate();
-  const { patientId } = useParams();
+  const { userId } = useParams();
 
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [focused, setFocused] = useState(false);
 
-  const goBack = () => navigate(`/dashboard/patient/${patientId}/points`);
+  const goBack = () => navigate(`/dashboard/usuario/${userId}/points`);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -42,7 +42,7 @@ export default function CreatePoint() {
     try {
       setSaving(true);
       setError("");
-      await InterestPointsService.create(patientId, { name: name.trim() });
+      await InterestPointsService.create(userId, { name: name.trim() });
       goBack();
     } catch (err) {
       console.error(err);
@@ -97,7 +97,7 @@ export default function CreatePoint() {
             justifyContent: "center",
           }}
         >
-          <MapPin size={20} style={{ color: FM.orange }} />
+          <Target size={20} style={{ color: FM.orange }} />
         </div>
         <div>
           <h1
@@ -175,7 +175,7 @@ export default function CreatePoint() {
               Nome do ponto
             </label>
             <div style={{ position: "relative" }}>
-              <MapPin
+              <Target
                 size={15}
                 style={{
                   position: "absolute",
@@ -283,7 +283,7 @@ export default function CreatePoint() {
                   flexShrink: 0,
                 }}
               >
-                <MapPin size={14} style={{ color: "#fff" }} />
+                <Target size={14} style={{ color: "#fff" }} />
               </div>
               <div>
                 <p

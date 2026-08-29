@@ -1,10 +1,11 @@
 
 import api from './api';
 
-export async function createPatient({ name, email, password }) {
+export async function createUser({ name, email, password }) {
   console.log("ENVIANDO REQUISIÇÃO PARA API...", { name, email, password }); // <---
 
   try {
+    // Endpoint do backend ainda se chama CreatePatient (contrato da API não muda).
     const response = await api.post('/User/CreatePatient', { name, email, password });
     console.log("RESPOSTA DA API:", response); // <---
 

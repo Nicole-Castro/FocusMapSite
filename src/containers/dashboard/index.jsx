@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Users, Activity, PlusCircle, Calendar, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getTotalPatients } from "../../services/getPatient";
-import { getSessionsByProfessional } from "../../services/sessionService";
+import { getTotalUsers } from "../../services/getUser";
+import { getSessionsByProfessional, getSessionsByUser } from "../../services/sessionService";
+import { getCurrentUser } from "../../services/authService";
 
 // ─── Paleta FocusMap ──────────────────────────────────────────────────────────
 const FM = {
@@ -27,19 +28,30 @@ const FM = {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ totalPatients: "-", sessions: "-" });
+  const [stats, setStats] = useState({ totalUsers: "-", sessions: "-" });
   const [loading, setLoading] = useState(true);
-
-  const userId = localStorage.getItem("user");
+  // Patient (o "Usuário" da interface) não gerencia outros usuários — só vê
+  // as próprias sessões, então essa tela some com tudo que é sobre "Usuários".
+  const [isPatient, setIsPatient] = useState(false);
 
   async function loadDashboardData() {
     try {
       setLoading(true);
-      const patientsRes = await getTotalPatients();
-      const totalPatients = patientsRes.total ?? 0;
+      const currentUser = await getCurrentUser().catch(() => null);
+      const patient = currentUser?.role === "Patient";
+      setIsPatient(patient);
+
+      if (patient) {
+        const sessions = (await getSessionsByUser(currentUser.id)) ?? [];
+        setStats({ totalUsers: 0, sessions: sessions.length });
+        return;
+      }
+
+      const usersRes = await getTotalUsers();
+      const totalUsers = usersRes.total ?? 0;
       const sessionsRes = await getSessionsByProfessional({ pageSize: 1 });
       const sessions = { length: sessionsRes?.totalCount ?? 0 };
-      setStats({ totalPatients, sessions: sessions.length ?? 0 });
+      setStats({ totalUsers, sessions: sessions.length ?? 0 });
     } catch (err) {
       console.error("Erro ao carregar dashboard:", err);
     } finally {
@@ -52,16 +64,18 @@ export default function Dashboard() {
   }, []);
 
   const cards = [
-    {
-      icon: Users,
-      label: "Pacientes cadastrados",
-      value: stats.totalPatients,
-      accent: FM.blue,
-      accentLight: FM.blueLight,
-      accentBorder: FM.blueBorder,
-      accentDark: FM.blueDark,
-      onClick: () => navigate("/dashboard/pacientes"),
-    },
+    ...(!isPatient
+      ? [{
+          icon: Users,
+          label: "Usuários cadastrados",
+          value: stats.totalUsers,
+          accent: FM.blue,
+          accentLight: FM.blueLight,
+          accentBorder: FM.blueBorder,
+          accentDark: FM.blueDark,
+          onClick: () => navigate("/dashboard/usuarios"),
+        }]
+      : []),
     {
       icon: Activity,
       label: "Sessões realizadas",
@@ -96,24 +110,26 @@ export default function Dashboard() {
           Bem-vindo de volta
         </h1>
         <p style={{ fontSize: 14, color: "rgba(255,255,255,0.82)", margin: "0 0 24px" }}>
-          Acompanhe seus pacientes e sessões em tempo real
+          {isPatient ? "Acompanhe suas sessões em tempo real" : "Acompanhe seus usuários e sessões em tempo real"}
         </p>
 
         {/* Ações rápidas */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-          <button
-            onClick={() => navigate("/dashboard/pacientes")}
-            style={{
-              display: "flex", alignItems: "center", gap: 7,
-              background: "#fff",
-              border: "none", borderRadius: 8,
-              padding: "9px 16px", fontSize: 13, fontWeight: 600,
-              color: FM.orangeDark, cursor: "pointer",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-            }}
-          >
-            <Users size={14} /> Ver Pacientes
-          </button>
+          {!isPatient && (
+            <button
+              onClick={() => navigate("/dashboard/usuarios")}
+              style={{
+                display: "flex", alignItems: "center", gap: 7,
+                background: "#fff",
+                border: "none", borderRadius: 8,
+                padding: "9px 16px", fontSize: 13, fontWeight: 600,
+                color: FM.orangeDark, cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+              }}
+            >
+              <Users size={14} /> Ver Usuários
+            </button>
+          )}
           <button
             onClick={() => navigate("/dashboard/historico-sessoes")}
             style={{
@@ -199,41 +215,43 @@ export default function Dashboard() {
       </div>
 
       {/* ── Ação extra ──────────────────────────────────────────────────────── */}
-      <div style={{
-        background: FM.bg,
-        border: `1px solid ${FM.border}`,
-        borderRadius: 14,
-        padding: "22px 24px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 16,
-        flexWrap: "wrap",
-      }}>
-        <div>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: FM.text, margin: "0 0 4px" }}>
-            Adicionar novo paciente
-          </h3>
-          <p style={{ fontSize: 13, color: FM.textMuted, margin: 0 }}>
-            Cadastre rapidamente um novo paciente no sistema
-          </p>
-        </div>
+      {!isPatient && (
+        <div style={{
+          background: FM.bg,
+          border: `1px solid ${FM.border}`,
+          borderRadius: 14,
+          padding: "22px 24px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 16,
+          flexWrap: "wrap",
+        }}>
+          <div>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: FM.text, margin: "0 0 4px" }}>
+              Adicionar novo usuário
+            </h3>
+            <p style={{ fontSize: 13, color: FM.textMuted, margin: 0 }}>
+              Cadastre rapidamente um novo usuário no sistema
+            </p>
+          </div>
 
-        <button
-          onClick={() => navigate("/dashboard/cadastro-paciente")}
-          style={{
-            display: "flex", alignItems: "center", gap: 8,
-            background: `linear-gradient(135deg, ${FM.orange}, ${FM.orangeDark})`,
-            border: "none", borderRadius: 8,
-            padding: "10px 20px", fontSize: 13, fontWeight: 600,
-            color: "#fff", cursor: "pointer",
-            boxShadow: `0 2px 10px ${FM.orangeLight}`,
-            whiteSpace: "nowrap",
-          }}
-        >
-          <PlusCircle size={16} /> Novo Paciente
-        </button>
-      </div>
+          <button
+            onClick={() => navigate("/dashboard/cadastro-usuario")}
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              background: `linear-gradient(135deg, ${FM.orange}, ${FM.orangeDark})`,
+              border: "none", borderRadius: 8,
+              padding: "10px 20px", fontSize: 13, fontWeight: 600,
+              color: "#fff", cursor: "pointer",
+              boxShadow: `0 2px 10px ${FM.orangeLight}`,
+              whiteSpace: "nowrap",
+            }}
+          >
+            <PlusCircle size={16} /> Novo Usuário
+          </button>
+        </div>
+      )}
 
       <style>{`
         @keyframes pulse {

@@ -2,10 +2,10 @@ import api from "./api";
 
 const InterestPointsService = {
   // ---------------------------------------------------
-  // Criar ponto de interesse (agora com patientId na URL)
+  // Criar ponto de interesse (agora com userId na URL)
   // ---------------------------------------------------
-  create: async (patientId, data) => {
-    const response = await api.post(`/interestpoint/${patientId}`, data);
+  create: async (userId, data) => {
+    const response = await api.post(`/interestpoint/${userId}`, data);
     return response.data;
   },
 
@@ -18,10 +18,11 @@ const InterestPointsService = {
   },
 
   // ---------------------------------------------------
-  // Buscar pontos por paciente
+  // Buscar pontos por usuário
+  // (rota do backend continua /interestpoint/patient/:id — contrato não muda)
   // ---------------------------------------------------
-  getByPatient: async (patientId) => {
-    const response = await api.get(`/interestpoint/patient/${patientId}`);
+  getByUser: async (userId) => {
+    const response = await api.get(`/interestpoint/patient/${userId}`);
     return response.data;
   },
 

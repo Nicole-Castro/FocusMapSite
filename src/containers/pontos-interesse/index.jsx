@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import {
   RefreshCw, Search, Edit2, Trash2,
   ChevronLeft, ChevronRight, PlusCircle,
-  MapPin, ArrowLeft, AlertCircle,
+  Target, ArrowLeft, AlertCircle,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import InterestPointsService from "../../services/interestPointsService";
-import { getPatientById } from "../../services/getPatient";
+import { getUserById } from "../../services/getUser";
 
 // ─── Paleta FocusMap ──────────────────────────────────────────────────────────
 const FM = {
@@ -59,10 +59,10 @@ function PointAvatar({ name, colorIdx }) {
 
 export default function PointsOfInterest() {
   const navigate = useNavigate();
-  const { patientId } = useParams();
+  const { userId } = useParams();
 
   const [points, setPoints] = useState([]);
-  const [patientName, setPatientName] = useState("Paciente");
+  const [userName, setUserName] = useState("Usuário");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -75,7 +75,7 @@ export default function PointsOfInterest() {
   async function loadPoints() {
     try {
       setError("");
-      const res = await InterestPointsService.getByPatient(patientId);
+      const res = await InterestPointsService.getByUser(userId);
       const pointsData = res?.data?.data ?? res?.data ?? res ?? [];
       const finalPoints = Array.isArray(pointsData) ? pointsData : (pointsData.points ?? []);
       setPoints(finalPoints);
@@ -88,22 +88,22 @@ export default function PointsOfInterest() {
   useEffect(() => {
     let mounted = true;
     async function load() {
-      if (!patientId) { navigate("/dashboard/pacientes"); return; }
+      if (!userId) { navigate("/dashboard/usuarios"); return; }
       try {
         setLoading(true);
         await loadPoints();
         try {
-          const resPatient = await getPatientById(patientId);
-          const patient = resPatient?.data?.data;
-          if (patient && mounted) setPatientName(patient.name ?? patient);
-        } catch { setPatientName("Paciente"); }
+          const resUser = await getUserById(userId);
+          const user = resUser?.data?.data;
+          if (user && mounted) setUserName(user.name ?? user);
+        } catch { setUserName("Usuário"); }
       } finally {
         if (mounted) setLoading(false);
       }
     }
     load();
     return () => { mounted = false; };
-  }, [patientId, navigate]);
+  }, [userId, navigate]);
 
   const filteredPoints = points.filter((p) =>
     (p.name ?? "").toLowerCase().includes(searchTerm.toLowerCase())
@@ -113,8 +113,8 @@ export default function PointsOfInterest() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentPoints = filteredPoints.slice(startIndex, startIndex + itemsPerPage);
 
-  const handleEdit   = (point) => navigate(`/dashboard/patient/${patientId}/points/edit/${point.id}`);
-  const handleCreate = () => navigate(`/dashboard/patient/${patientId}/points/create`);
+  const handleEdit   = (point) => navigate(`/dashboard/usuario/${userId}/points/edit/${point.id}`);
+  const handleCreate = () => navigate(`/dashboard/usuario/${userId}/points/create`);
 
   const handleDelete = async (point) => {
     if (!confirm(`Excluir o ponto "${point.name}"?`)) return;
@@ -134,7 +134,7 @@ export default function PointsOfInterest() {
 
       {/* ── Breadcrumb ────────────────────────────────────────────────────── */}
       <button
-        onClick={() => navigate("/dashboard/pacientes")}
+        onClick={() => navigate("/dashboard/usuarios")}
         style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           background: "none", border: "none", cursor: "pointer",
@@ -143,13 +143,13 @@ export default function PointsOfInterest() {
         }}
       >
         <ArrowLeft size={13} />
-        Pacientes / Pontos de Interesse
+        Usuários / Pontos de Interesse
       </button>
 
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div>
-          {/* nome do paciente com destaque */}
+          {/* nome do usuário com destaque */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <div style={{
               width: 36, height: 36, borderRadius: "50%",
@@ -157,14 +157,14 @@ export default function PointsOfInterest() {
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 14, fontWeight: 700, color: "#fff", flexShrink: 0,
             }}>
-              {patientName?.charAt(0)?.toUpperCase() || "P"}
+              {userName?.charAt(0)?.toUpperCase() || "U"}
             </div>
             <h1 style={{ fontSize: 21, fontWeight: 700, color: FM.text, margin: 0 }}>
-              {patientName}
+              {userName}
             </h1>
           </div>
           <p style={{ fontSize: 13, color: FM.textMuted, margin: 0, display: "flex", alignItems: "center", gap: 5 }}>
-            <MapPin size={12} style={{ color: FM.orange }} />
+            <Target size={12} style={{ color: FM.orange }} />
             {filteredPoints.length} ponto(s) de interesse cadastrado(s)
           </p>
         </div>
@@ -243,7 +243,7 @@ export default function PointsOfInterest() {
       {!loading && !error && filteredPoints.length === 0 && (
         <div style={{ textAlign: "center", padding: "64px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
           <div style={{ width: 56, height: 56, borderRadius: "50%", background: FM.orangePale, border: `1px solid ${FM.orangeBorder}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <MapPin size={24} style={{ color: FM.orange }} />
+            <Target size={24} style={{ color: FM.orange }} />
           </div>
           <p style={{ fontSize: 15, fontWeight: 600, color: FM.textMid, margin: 0 }}>
             Nenhum ponto encontrado

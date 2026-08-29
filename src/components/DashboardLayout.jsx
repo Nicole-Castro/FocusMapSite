@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   User,
+  ShieldCheck,
 } from "lucide-react";
 import { useEffect } from "react";
 import { getCurrentUser } from "../services/authService";
@@ -39,8 +40,17 @@ export default function DashboardLayout() {
   };
   const menuItems = [
     { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { path: "/dashboard/pacientes", icon: Users, label: "Pacientes" },
+    // Quem é Patient (a pessoa monitorada, "Usuário" na interface) não gerencia
+    // outros usuários — só vê as próprias sessões. Proteção real fica no backend
+    // (Session/patient/{id} e User/ListPatients continuam checando o dono).
+    ...(user?.role !== "Patient"
+      ? [{ path: "/dashboard/usuarios", icon: Users, label: "Usuários" }]
+      : []),
     { path: "/dashboard/historico-sessoes", icon: History, label: "Sessões" },
+    // Só aparece pra Admin (funcionário da empresa) — a proteção real é o backend.
+    ...(user?.role === "Admin"
+      ? [{ path: "/dashboard/admin/profissionais", icon: ShieldCheck, label: "Profissionais" }]
+      : []),
   ];
 
   const handleLogout = () => {

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { createPatient } from "../../services/createPatient";
+import { createUser } from "../../services/createUser";
 import { User, Mail, Lock, AlertCircle, Brain } from "lucide-react";
 
 // ─── Paleta FocusMap ──────────────────────────────────────────────────────────
@@ -82,7 +82,7 @@ function Input({ icon: Icon, label, error, ...props }) {
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
-export default function CadastroPaciente() {
+export default function CadastroUsuario() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -124,7 +124,7 @@ export default function CadastroPaciente() {
   const handleSubmit = async () => {
     if (!validate()) return;
     setLoading(true);
-    const res = await createPatient({ name: formData.nome, email: formData.email, password: formData.senha });
+    const res = await createUser({ name: formData.nome, email: formData.email, password: formData.senha });
     setLoading(false);
     if (res.success) {
       setFormData({ nome: "", email: "", senha: "" });
@@ -136,7 +136,7 @@ export default function CadastroPaciente() {
   };
 
   const strength = getPasswordStrength(formData.senha);
-  const previewInitial = formData.nome?.trim().charAt(0)?.toUpperCase() || "P";
+  const previewInitial = formData.nome?.trim().charAt(0)?.toUpperCase() || "U";
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "4px 0 3rem" }}>
@@ -144,10 +144,10 @@ export default function CadastroPaciente() {
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: FM.text, margin: "0 0 4px" }}>
-          Cadastro de Paciente
+          Cadastro de Usuário
         </h1>
         <p style={{ fontSize: 13, color: FM.textMuted, margin: 0 }}>
-          Crie um novo paciente no sistema FocusMap
+          Crie um novo usuário no sistema FocusMap
         </p>
       </div>
 
@@ -171,7 +171,7 @@ export default function CadastroPaciente() {
           borderRadius: 8, padding: "10px 14px", marginBottom: 16,
           fontSize: 13, color: FM.greenDark,
         }}>
-          ✓ Paciente cadastrado com sucesso!
+          ✓ Usuário cadastrado com sucesso!
         </div>
       )}
 
@@ -254,7 +254,7 @@ export default function CadastroPaciente() {
               transition: "opacity 0.15s",
             }}
           >
-            {loading ? "Cadastrando..." : "Cadastrar Paciente"}
+            {loading ? "Cadastrando..." : "Cadastrar Usuário"}
           </button>
         </div>
 
@@ -272,7 +272,7 @@ export default function CadastroPaciente() {
 
           <div>
             <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.7)", margin: "0 0 14px" }}>
-              Preview do paciente
+              Preview do usuário
             </p>
 
             {/* Avatar + info */}
@@ -289,7 +289,7 @@ export default function CadastroPaciente() {
               </div>
               <div style={{ minWidth: 0 }}>
                 <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: "0 0 2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {formData.nome || "Nome do paciente"}
+                  {formData.nome || "Nome do usuário"}
                 </p>
                 <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {formData.email || "email@exemplo.com"}
@@ -310,7 +310,7 @@ export default function CadastroPaciente() {
           </div>
 
           <p style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", margin: 0, lineHeight: 1.5 }}>
-            Este paciente poderá ser monitorado pelo FocusMap com dados EEG em tempo real.
+            Este usuário poderá ser monitorado pelo FocusMap com dados EEG em tempo real.
           </p>
         </div>
       </div>

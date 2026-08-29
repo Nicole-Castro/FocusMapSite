@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, MapPin, AlertCircle, RefreshCw } from "lucide-react";
+import { ArrowLeft, Save, Target, AlertCircle, RefreshCw } from "lucide-react";
 import InterestPointsService from "../../services/interestPointsService";
 
 // ─── Paleta FocusMap ──────────────────────────────────────────────────────────
@@ -28,7 +28,7 @@ const FM = {
 
 export default function PointsEdit() {
   const navigate = useNavigate();
-  const { patientId, id } = useParams();
+  const { userId, id } = useParams();
 
   const [name, setName] = useState("");
   const [original, setOriginal] = useState("");
@@ -37,7 +37,7 @@ export default function PointsEdit() {
   const [error, setError] = useState("");
   const [focused, setFocused] = useState(false);
 
-  const goBack = () => navigate(`/dashboard/patient/${patientId}/points`);
+  const goBack = () => navigate(`/dashboard/usuario/${userId}/points`);
   const isDirty = name.trim() !== original.trim();
 
   // ── Carregar ponto ─────────────────────────────────────────────────────────
@@ -77,7 +77,8 @@ export default function PointsEdit() {
     try {
       setSaving(true);
       setError("");
-      await InterestPointsService.update(id, { name: name.trim(), patientId });
+      // Campo "patientId" no payload é o nome que o backend espera — contrato não muda.
+      await InterestPointsService.update(id, { name: name.trim(), patientId: userId });
       goBack();
     } catch (err) {
       console.error(err);
@@ -157,7 +158,7 @@ export default function PointsEdit() {
             justifyContent: "center",
           }}
         >
-          <MapPin size={20} style={{ color: FM.yellow }} />
+          <Target size={20} style={{ color: FM.yellow }} />
         </div>
         <div>
           <h1
@@ -233,7 +234,7 @@ export default function PointsEdit() {
                 borderRadius: 8,
               }}
             >
-              <MapPin size={13} style={{ color: FM.yellow, flexShrink: 0 }} />
+              <Target size={13} style={{ color: FM.yellow, flexShrink: 0 }} />
               <p style={{ fontSize: 12, color: FM.textMid, margin: 0 }}>
                 Editando: <strong>{original}</strong>
               </p>
@@ -256,7 +257,7 @@ export default function PointsEdit() {
               Novo nome
             </label>
             <div style={{ position: "relative" }}>
-              <MapPin
+              <Target
                 size={15}
                 style={{
                   position: "absolute",
@@ -323,7 +324,7 @@ export default function PointsEdit() {
                   flexShrink: 0,
                 }}
               >
-                <MapPin size={14} style={{ color: "#fff" }} />
+                <Target size={14} style={{ color: "#fff" }} />
               </div>
               <div>
                 <p

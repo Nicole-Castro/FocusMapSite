@@ -1102,7 +1102,7 @@ export default function DashboardSessao() {
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
         <InfoCard
           icon={User}
-          label="Paciente"
+          label="Usuário"
           value={session.patient_name}
           accentColor={FM.blue}
         />
@@ -1592,7 +1592,7 @@ export default function DashboardSessao() {
             }}
           >
             Períodos contínuos com atenção ≥ 60 — momentos de maior engajamento
-            do paciente
+            do usuário
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {focusZones.map((z, i) => (

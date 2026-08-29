@@ -40,7 +40,7 @@ import {
 } from "recharts";
 
 
-import { getPatientProgress } from "../../services/patientProgressService";
+import { getUserProgress } from "../../services/userProgressService";
 
 // ─── Paleta FocusMap (idêntica ao DashboardSessao) ───────────────────────────
 const FM = {
@@ -494,8 +494,8 @@ function SessionCard({ session, isExpanded, onToggle, onNavigate }) {
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
-export default function DashboardProgressoPaciente() {
-  const { patientId } = useParams();
+export default function DashboardProgressoUsuario() {
+  const { userId } = useParams();
   const navigate = useNavigate();
 
   const [progress, setProgress] = useState(null);
@@ -506,7 +506,7 @@ export default function DashboardProgressoPaciente() {
   useEffect(() => {
     async function load() {
       try {
-        const data = await getPatientProgress(patientId);
+        const data = await getUserProgress(userId);
         setProgress(data);
       } catch (err) {
         console.error("Erro ao carregar progresso:", err);
@@ -515,7 +515,7 @@ export default function DashboardProgressoPaciente() {
       }
     }
     load();
-  }, [patientId]);
+  }, [userId]);
 
   // ── Dados para os gráficos ────────────────────────────────────────────────
   const trendData = useMemo(() => {
@@ -568,7 +568,7 @@ export default function DashboardProgressoPaciente() {
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 280, gap: 12, color: FM.textMuted, fontSize: 14 }}>
         <RefreshCw size={32} style={{ color: FM.orange, animation: "spin 0.8s linear infinite" }} />
-        Carregando progresso do paciente…
+        Carregando progresso do usuário…
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -578,7 +578,7 @@ export default function DashboardProgressoPaciente() {
     return (
       <div style={{ textAlign: "center", padding: "4rem", color: FM.textMuted }}>
         <Brain size={40} style={{ opacity: 0.3, marginBottom: 12 }} />
-        <p style={{ fontSize: 15 }}>Paciente não encontrado.</p>
+        <p style={{ fontSize: 15 }}>Usuário não encontrado.</p>
       </div>
     );
   }
@@ -609,7 +609,7 @@ export default function DashboardProgressoPaciente() {
             <Brain size={17} style={{ color: "#fff" }} />
           </div>
           <h1 style={{ fontSize: 18, fontWeight: 700, color: FM.text, margin: 0 }}>
-            Progresso do Paciente
+            Progresso do Usuário
           </h1>
         </div>
 
@@ -621,10 +621,10 @@ export default function DashboardProgressoPaciente() {
         )}
       </div>
 
-      {/* ── Info do paciente ─────────────────────────────────────────────── */}
+      {/* ── Info do usuário ─────────────────────────────────────────────── */}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
         {[
-          { icon: User, label: "Paciente", value: progress.patient_name, color: FM.blue },
+          { icon: User, label: "Usuário", value: progress.patient_name, color: FM.blue },
           { icon: Calendar, label: "Primeira sessão", value: formatDateFull(progress.first_session_date), color: FM.orange },
           { icon: Calendar, label: "Última sessão", value: formatDateFull(progress.last_session_date), color: FM.orange },
           { icon: Hash, label: "Total de sessões", value: `${progress.total_sessions} sessões`, color: FM.purple },

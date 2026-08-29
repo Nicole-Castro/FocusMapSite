@@ -322,7 +322,7 @@ export default function SessaoDetalhes() {
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
         <InfoCard
           icon={User}
-          label="Paciente"
+          label="Usuário"
           value={session.patient_name}
           accent
         />

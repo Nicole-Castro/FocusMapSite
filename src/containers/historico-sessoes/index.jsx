@@ -5,8 +5,9 @@ import {
   ArrowRight, RefreshCw, Users, ChevronLeft, ChevronRight,
   X, Search,
 } from "lucide-react";
-import { getSessionsByProfessional } from "../../services/sessionService";
-import { getPatients } from "../../services/getPatient";
+import { getSessionsByProfessional, getSessionsByUser } from "../../services/sessionService";
+import { getUsers } from "../../services/getUser";
+import { getCurrentUser } from "../../services/authService";
 
 // ─── Paleta FocusMap ──────────────────────────────────────────────────────────
 const FM = {
@@ -30,8 +31,8 @@ const calcDuration = (start, end) => {
   return min < 60 ? `${min} min` : `${Math.floor(min / 60)}h ${min % 60}min`;
 };
 
-function PatientAvatar({ name }) {
-  const initial = name?.trim().charAt(0)?.toUpperCase() || "P";
+function UserAvatar({ name }) {
+  const initial = name?.trim().charAt(0)?.toUpperCase() || "U";
   return (
     <div style={{
       width: 46, height: 46, borderRadius: "50%", flexShrink: 0,
@@ -68,32 +69,85 @@ export default function HistoricoSessoes() {
 
   // ── dados
   const [data, setData]       = useState({ items: [], totalCount: 0, totalFinished: 0, totalInProgress: 0, totalPages: 1 });
-  const [patients, setPatients] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // ── quem está logado — um Patient (o "Usuário" da interface) só vê as
+  // próprias sessões, sem o filtro por usuário nem acesso aos dados dos demais.
+  const [role, setRole] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [roleLoaded, setRoleLoaded] = useState(false);
+  const isPatient = role === "Patient";
 
   // ── filtros
   const [page, setPage]               = useState(1);
   const [status, setStatus]           = useState("all");      // all | finished | in_progress
-  const [patientId, setPatientId]     = useState("");
+  const [userId, setUserId]           = useState("");
   const [dateFrom, setDateFrom]       = useState("");
   const [dateTo, setDateTo]           = useState("");
 
-  // ── carregar lista de pacientes (para o select)
   useEffect(() => {
-    getPatients().then((res) => {
-      if (res.success) setPatients(res.data || []);
-    });
+    let mounted = true;
+    getCurrentUser()
+      .then((u) => {
+        if (!mounted) return;
+        setRole(u?.role ?? null);
+        setCurrentUserId(u?.id ?? null);
+        // Lista de usuários (pro select de filtro) só faz sentido pra quem
+        // gerencia usuários — Patient nem tem acesso a esse endpoint.
+        if (u?.role !== "Patient") {
+          getUsers().then((res) => {
+            if (mounted && res.success) setUsers(res.data || []);
+          });
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (mounted) setRoleLoaded(true);
+      });
+    return () => { mounted = false; };
   }, []);
 
-  // ── busca paginada (re-executa quando qualquer filtro ou página muda)
+  // ── busca (re-executa quando qualquer filtro, página ou o papel do usuário muda)
   const fetchSessions = useCallback(async () => {
+    if (!roleLoaded) return;
     setLoading(true);
     try {
+      if (isPatient) {
+        if (!currentUserId) { setData({ items: [], totalCount: 0, totalFinished: 0, totalInProgress: 0, totalPages: 1 }); return; }
+
+        const all = (await getSessionsByUser(currentUserId)) ?? [];
+        const withinRange = (iso) => {
+          const t = new Date(iso).getTime();
+          if (dateFrom && t < new Date(dateFrom).getTime()) return false;
+          if (dateTo && t > new Date(dateTo + "T23:59:59").getTime()) return false;
+          return true;
+        };
+        const filteredSessions = all.filter((s) => {
+          if (status === "finished" && !s.session_end_time) return false;
+          if (status === "in_progress" && s.session_end_time) return false;
+          return withinRange(s.session_start_time);
+        });
+
+        const totalPages = Math.max(1, Math.ceil(filteredSessions.length / PAGE_SIZE));
+        const start = (page - 1) * PAGE_SIZE;
+        setData({
+          items: filteredSessions.slice(start, start + PAGE_SIZE),
+          totalCount: filteredSessions.length,
+          totalFinished: all.filter((s) => s.session_end_time).length,
+          totalInProgress: all.filter((s) => !s.session_end_time).length,
+          totalPages,
+          page,
+        });
+        return;
+      }
+
       const params = {
         page,
         pageSize: PAGE_SIZE,
         status: status === "all" ? undefined : status,
-        patientId: patientId || undefined,
+        // Query param continua "patientId" — contrato do backend não muda.
+        patientId: userId || undefined,
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
       };
@@ -113,16 +167,16 @@ export default function HistoricoSessoes() {
     } finally {
       setLoading(false);
     }
-  }, [page, status, patientId, dateFrom, dateTo]);
+  }, [page, status, userId, dateFrom, dateTo, roleLoaded, isPatient, currentUserId]);
 
   useEffect(() => { fetchSessions(); }, [fetchSessions]);
 
   // ao mudar filtro, voltar para página 1
   const applyFilter = (fn) => { fn(); setPage(1); };
 
-  const hasActiveFilters = status !== "all" || patientId || dateFrom || dateTo;
+  const hasActiveFilters = status !== "all" || userId || dateFrom || dateTo;
   const clearFilters = () => {
-    setStatus("all"); setPatientId(""); setDateFrom(""); setDateTo(""); setPage(1);
+    setStatus("all"); setUserId(""); setDateFrom(""); setDateTo(""); setPage(1);
   };
 
   const finished   = data.totalFinished;
@@ -157,23 +211,25 @@ export default function HistoricoSessoes() {
           <FilterChip label="Em andamento" active={status === "in_progress"} onClick={() => applyFilter(() => setStatus("in_progress"))} />
         </div>
 
-        {/* linha 2 — paciente + datas */}
+        {/* linha 2 — usuário (só quando não é o próprio Patient) + datas */}
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
 
-          {/* Paciente */}
-          <div style={{ flex: "1 1 180px", position: "relative" }}>
-            <Users size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: FM.textMuted, pointerEvents: "none" }} />
-            <select
-              value={patientId}
-              onChange={(e) => applyFilter(() => setPatientId(e.target.value))}
-              style={{ width: "100%", paddingLeft: 30, paddingRight: 12, paddingTop: 8, paddingBottom: 8, fontSize: 13, border: `1px solid ${FM.border}`, borderRadius: 8, background: FM.bg, color: patientId ? FM.text : FM.textMuted, outline: "none", cursor: "pointer" }}
-            >
-              <option value="">Todos os pacientes</option>
-              {patients.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
+          {/* Usuário */}
+          {!isPatient && (
+            <div style={{ flex: "1 1 180px", position: "relative" }}>
+              <Users size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: FM.textMuted, pointerEvents: "none" }} />
+              <select
+                value={userId}
+                onChange={(e) => applyFilter(() => setUserId(e.target.value))}
+                style={{ width: "100%", paddingLeft: 30, paddingRight: 12, paddingTop: 8, paddingBottom: 8, fontSize: 13, border: `1px solid ${FM.border}`, borderRadius: 8, background: FM.bg, color: userId ? FM.text : FM.textMuted, outline: "none", cursor: "pointer" }}
+              >
+                <option value="">Todos os usuários</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Data de */}
           <div style={{ flex: "1 1 140px", position: "relative" }}>
@@ -265,7 +321,7 @@ export default function HistoricoSessoes() {
 
                 {/* esquerda */}
                 <div style={{ display: "flex", alignItems: "center", gap: 14, paddingLeft: 8 }}>
-                  <PatientAvatar name={session.patient_name} />
+                  <UserAvatar name={session.patient_name} />
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     <span style={{ fontSize: 15, fontWeight: 600, color: FM.text }}>{session.patient_name}</span>
                     <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
